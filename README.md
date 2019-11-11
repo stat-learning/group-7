@@ -2,3 +2,4 @@
 
 - Olek Wojcik
 - Ben Thomas
+- Alice Chang
