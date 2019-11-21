@@ -22,9 +22,9 @@ Before diving into the exploration, we first need to actually get the data.
 college.data <- read.csv("2014_2015_college_data.csv", header = TRUE)
 ```
 
-Now, let's take a look at this data. How much is missing? To do this, I'll use the `Amelia` package. Note that I've changed the "NULL" and "PrivacySuppressed" values to "NA" so that they show up in this visualization. 
+Now, let's take a look at this data. How much is missing? To do this, I'll use the `Amelia` package. Note that I've changed the "NULL" and "PrivacySuppressed" values to "NA" so that they show up in this visualization. Note also that instead of the real output, I've attached a screenshot of the output, as the actual pdf file with the output included is *gigantic*. 
 
-```{r Visualize missingness}
+```{r Visualize missingness, eval= FALSE}
 library(Amelia)
 library(tidyverse)
 
@@ -35,9 +35,12 @@ college.data <- college.data %>%
 missmap(college.data)
 ```
 
+![](Missingness.png)
+
 61% of the data in this dataset is missing; not ideal. Let's now clean this data and get it in workable form. 
 
 ```{r Clean the data}
+library(tidyverse)
 not_all_na <- function(x) any(!is.na(x))
 
 # Remove intro variables and other earnings variables
@@ -66,9 +69,6 @@ library(ggplot2)
 ggplot(data = college.data.section, mapping = aes(y = MN_EARN_WNE_P6)) + geom_boxplot() + labs(y = "Count of Students Working After Ten Years", title = "Boxplot of Response Variable")
 ```
 
-```{r}
-ggplot(college.data.section, aes(x=MN_EARN_WNE_P6)) + geom_histogram(binwidth = 4)
-```
 
 #### Visualizing Multicollinearity
 
