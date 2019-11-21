@@ -66,50 +66,39 @@ library(ggplot2)
 ggplot(data = college.data.section, mapping = aes(y = MN_EARN_WNE_P6)) + geom_boxplot() + labs(y = "Count of Students Working After Ten Years", title = "Boxplot of Response Variable")
 ```
 
+```{r}
+ggplot(college.data.section, aes(x=MN_EARN_WNE_P6)) + geom_histogram(binwidth = 4)
+```
+
 #### Visualizing Multicollinearity
 
-Because of the large amount of missing data still left, it's difficult to calculate the exact correlations between a few variables that we assume are important in this case. Here are some scatter plots them:
+Because of the large amount of missing data still left, it's difficult to calculate the exact correlations between a few variables that we assume are important in this case. Here are some scatter plots of a few potentially important predictors:
 
 PCTPELL: percentage of students receiving pell grants
 ADM_RATE: admission rate
 COSTT4_A: Average cost of attendance (academic year institutions)
 
-```{r Scatter plot}
+```{r Scatter plot 1}
 pairs(~PCTPELL + ADM_RATE + COSTT4_A, college.data.section)
 ```
 ACTCM75: 75th percentile of the ACT cumulative score
 UGDS: Enrollment of undergraduate certificate/degree-seeking students
 
-```{r Scatter plot}
+```{r Scatter plot 2}
 pairs(~ACTCM75 + UGDS + COSTT4_A, college.data.section)
 ```
 
-
-To get an initial idea as to which variables we should be considering here, I've created a boosted regression tree and displayed the variable importances. 
-
 #### Bivariate Visual Representations
 
-We ran a random forest model on the data, which said that LO_INC_YR8_N has the highest importance in terms of both MSE and node purity. It is the number of low-income (less than $30,000 in nominal family income) students in overall 8-year completion cohort.
+We ran a random forest model on the data, which said that LO_INC_YR8_N has the highest importance in terms of both MSE and node purity. It is the number of low-income (less than $30,000 in nominal family income) students in overall 8-year completion cohort. Below, we've graphed both `LO_INC_YR8_N` and `PCTPELL` with our response variable. 
 
-```{r Bivariate}
+```{r Bivariate 1}
 ggplot(college.data.section, aes(x=PCTPELL , y=MN_EARN_WNE_P6)) + 
   geom_point(alpha = 0.2)
 ```
 
-```{r Bivariate}
-ggplot(college.data.section, aes(x= LO_INC_YR8_N, y=MN_EARN_WNE_P6)) + 
-  geom_point()
-```
-
-The relationship appears positive, but there seem to be two kinds of schools here: Ones that increase their employment gradually as low-income students in 8-year cohorts increase, and ones that start out with high
-
-```{r Boosted tree}
-library(gbm)
-employment.tree <- gbm(MN_EARN_WNE_P6 ~ ., 
-                       data = college.data.section, 
-                       n.trees = 150, 
-                       interaction.depth = 1,
-                       shrinkage = 0.1)
-summary(employment.tree)
+```{r Bivariate 2}
+ggplot(college.data.section, aes(x= COSTT4_A, y=MN_EARN_WNE_P6)) + 
+  geom_point(alpha = 0.2)
 ```
 
