@@ -12,27 +12,27 @@ output: pdf_document
 
 Our group is trying to explore why students of different colleges/universities have different employment outcomes. Specifically, we're interested in both (1) students' employment rate after graduation and (2) students' salaries after graduation. To approach this problem, we're using data from the U.S. Department of Education: the "College Scorecard." 
   
-The College Scorecard (found here: https://collegescorecard.ed.gov/data/) has an absolutely huge amount of data, across many years. We've started our analysis with the 2014-15 dataset, which is more complete than more recent datasets. Before cleaning the data, we have 1,977 predictor variables and 7,703 observations, which represent individual colleges and universities. After cleaning the data (below), we have 1,593 predictor variables and 5,492 observations. This large decrease is primarily due to (1) removing the variables which only contained `NA` values and (2) removing rows for which our dependent variable (`COUNT_NWNE_P10`) was `NA`. 
+The College Scorecard (found here: https://collegescorecard.ed.gov/data/) has an absolutely huge amount of data, across many years. We've started our analysis with the 2014-15 dataset, which is more complete than more recent datasets. Before cleaning the data, we have 1,977 predictor variables and 7,703 observations, which represent individual colleges and universities. After cleaning the data (below), we have 1,593 predictor variables and 5,492 observations. This large decrease is primarily due to (1) removing the variables which only contained `NA` values and (2) removing rows for which our dependent variable (`MN_EARN_WNE_P6`) was `NA`. 
 
 ### Data exploration
 
 Before diving into the exploration, we first need to actually get the data. 
 
 ```{r Read the data}
-college.data <- read.csv("MERGED2014_15_PP.csv", header = TRUE)
+college.data <- read.csv("2014_2015_college_data.csv", header = TRUE)
 ```
 
-Now, let's take a look at this data. How much is missing? To do this, I'll use the `naniar` package. Note that I've changed the "NULL" and "PrivacySuppressed" values to "NA" so that they show up in this visualization. 
+Now, let's take a look at this data. How much is missing? To do this, I'll use the `Amelia` package. Note that I've changed the "NULL" and "PrivacySuppressed" values to "NA" so that they show up in this visualization. 
 
 ```{r Visualize missingness}
-library(naniar)
+library(Amelia)
 library(tidyverse)
 
 college.data <- college.data %>%
   replace(.=="NULL", NA) %>%
   replace(.== "PrivacySuppressed", NA)
   
-vis_miss(college.data, show_perc_col = FALSE, warn_large_data = FALSE)
+missmap(college.data)
 ```
 
 61% of the data in this dataset is missing; not ideal. Let's now clean this data and get it in workable form. 
@@ -42,11 +42,11 @@ not_all_na <- function(x) any(!is.na(x))
 
 # Remove intro variables and other earnings variables
 college.data.section <- college.data %>%
-  select(MAIN:COUNT_NWNE_P10, + DEBT_MDN_SUPP:OMENRUP_PARTTIME_POOLED_SUPP)
+  select(MAIN:OMENRUP_PARTTIME_POOLED_SUPP)
   
 # Drop NAs in response
 college.data.section <- college.data.section %>% 
-  drop_na(COUNT_NWNE_P10)
+  drop_na(MN_EARN_WNE_P6)
 
 # Remove columns with only NA values
 college.data.section <- college.data.section %>% 
@@ -57,14 +57,59 @@ college.data.section[, c(1:ncol(college.data.section))] <- sapply(college.data.s
 
 ```
 
+#### Univariate Analysis of Response
+
+So now let's examine our response variable, MN_EARN_WNE_P6, which is the number of students working and not enrolled 10 years after entry.
+
+```{r Boxplot}
+library(ggplot2)
+ggplot(data = college.data.section, mapping = aes(y = MN_EARN_WNE_P6)) + geom_boxplot() + labs(y = "Count of Students Working After Ten Years", title = "Boxplot of Response Variable")
+```
+
+#### Visualizing Multicollinearity
+
+Because of the large amount of missing data still left, it's difficult to calculate the exact correlations between a few variables that we assume are important in this case. Here are some scatter plots them:
+
+PCTPELL: percentage of students receiving pell grants
+ADM_RATE: admission rate
+COSTT4_A: Average cost of attendance (academic year institutions)
+
+```{r Scatter plot}
+pairs(~PCTPELL + ADM_RATE + COSTT4_A, college.data.section)
+```
+ACTCM75: 75th percentile of the ACT cumulative score
+UGDS: Enrollment of undergraduate certificate/degree-seeking students
+
+```{r Scatter plot}
+pairs(~ACTCM75 + UGDS + COSTT4_A, college.data.section)
+```
+
+
 To get an initial idea as to which variables we should be considering here, I've created a boosted regression tree and displayed the variable importances. 
+
+#### Bivariate Visual Representations
+
+We ran a random forest model on the data, which said that LO_INC_YR8_N has the highest importance in terms of both MSE and node purity. It is the number of low-income (less than $30,000 in nominal family income) students in overall 8-year completion cohort.
+
+```{r Bivariate}
+ggplot(college.data.section, aes(x=PCTPELL , y=MN_EARN_WNE_P6)) + 
+  geom_point(alpha = 0.2)
+```
+
+```{r Bivariate}
+ggplot(college.data.section, aes(x= LO_INC_YR8_N, y=MN_EARN_WNE_P6)) + 
+  geom_point()
+```
+
+The relationship appears positive, but there seem to be two kinds of schools here: Ones that increase their employment gradually as low-income students in 8-year cohorts increase, and ones that start out with high
 
 ```{r Boosted tree}
 library(gbm)
-employment.tree <- gbm(COUNT_NWNE_P10 ~ ., 
+employment.tree <- gbm(MN_EARN_WNE_P6 ~ ., 
                        data = college.data.section, 
                        n.trees = 150, 
                        interaction.depth = 1,
                        shrinkage = 0.1)
 summary(employment.tree)
 ```
+
