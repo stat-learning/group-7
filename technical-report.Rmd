@@ -51,7 +51,8 @@ Note also that we have limited the scope of our analysis to only four-year colle
 ```{r Filter variables}
 section1 <- college.data.section %>%
   filter(ICLEVEL == 1) %>%
-  select(REGION, 
+  select(INSTNM,
+         REGION, 
          CONTROL, 
          NUMBRANCH, 
          HIGHDEG, 
@@ -98,7 +99,8 @@ categoricals[,] <- sapply(categoricals[,], as.factor)
 ```{r Create final dataset}
 # Create final dataframe
 df_final <- cbind(numerics, 
-                  categoricals)
+                  categoricals,
+                  section1$INSTNM)
 ```
 
 ### Exploratory data analysis
@@ -134,7 +136,7 @@ There are two different methods of imputing missing data that we use: (1) multip
 
 #### Multiple imputation with `mice`
 
-In order to impute our missing values using the `mice` package, we need to impute the continuous variables and categorical variables separately. To impute the continuous variables, we will use predictive mean matching. For the categorical variables, we'll use logistic regression.
+In order to impute our missing values using the `mice` package, we need to impute the continuous variables and categorical variables separately. To impute the continuous variables, we will use predictive mean matching. Fortunately for us, there are no missing observations for the categorical variables, so we do not have to impute anything there.
 
 ```{r Install and load mice package, message=FALSE, warning=FALSE}
 if(!require(mice)){
@@ -147,15 +149,38 @@ Below we impute the continuous variables.
 
 ```{r Impute continuous variables, message=FALSE, cache=TRUE}
 numerics.mice <- mice(numerics, m=5, maxit = 50, method = 'pmm', seed = 500)
-numerics.mice.df <- numerics.mice$imp
+
+numerics.mice.df1 <- complete(numerics.mice, 1)
+numerics.mice.df2 <- complete(numerics.mice, 2)
+numerics.mice.df3 <- complete(numerics.mice, 3)
+numerics.mice.df4 <- complete(numerics.mice, 4)
+numerics.mice.df5 <- complete(numerics.mice, 5)
 ```
 
-```{r Impute categorical variables}
+```{r Combine numerical imputed values into one dataset}
+# Create empty dataframe
+df_numerics.mice <- data.frame(matrix(NA, nrow = 2822, ncol = 78))
 
+# Replace cells with the mean of the 5 imputed dataframes
+for (i in 1:2822) {
+  for (j in 1:78) {
+    df_numerics.mice[i,j] = mean(numerics.mice.df1[i,j],
+                                 numerics.mice.df2[i, j],
+                                 numerics.mice.df3[i,j],
+                                 numerics.mice.df4[i,j],
+                                 numerics.mice.df5[i,j])
+  }
+}
+
+# Rename columns to the correct names
+for (i in 1:78){
+  names(df_numerics.mice)[i] = names(numerics)[i]
+}
 ```
 
-```{r Combine into one dataset}
-
+```{r Create final mice imputed dataset}
+df.final.mice <- cbind.data.frame(df_numerics.mice,
+                                  categoricals)
 ```
 
 #### Multiple imputation with `missForest`
@@ -163,15 +188,17 @@ numerics.mice.df <- numerics.mice$imp
 Below, we use the `missForest` package to impute our missing data. Unlike the `mice` package, we can do this imputation in one step, which makes it much more simple. 
 
 ```{r Install and load missForest package}
-
+if(!require(missForest)){
+    install.packages("missForest")
+}
+library(missForest)
 ```
 
-```{r Impute variables with missForest}
-library(missForest)
+```{r Impute variables with missForest, cache=TRUE}
 missForest.imputation <- missForest(df_final)
 ```
 
-```{r}
+```{r, cache=TRUE}
 missForest_df <- missForest.imputation$ximp
 ```
 
