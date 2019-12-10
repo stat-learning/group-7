@@ -1,0 +1,15 @@
+---
+title: "Sources"
+author: 
+- "Alice Change"
+- "Ben Thomas"
+- "Olek Wojcik"
+date: "12/11/2019"
+output: pdf_document
+---
+
+Brewer, Dominic J, Eric Eide, and Ronald G Ehrenberg. “Does It Pay To Attend An Elite Private College? Cross Cohort Evidence on the Effects of College Quality on Earnings.” Working Paper. National Bureau of Economic Research, June 1996. https://doi.org/10.3386/w5613.
+James, Estelle, Nabeel Alsalam, Joseph C. Conaty, and Duc-Le To. “College Quality and Future Earnings: Where Should You Send Your Child to College?” The American Economic Review 79, no. 2 (1989): 247–52.
+Oehrlein, Paul. “Determining the Future Income of College Students,” n.d., 34.
+CEW Georgetown. “The Economic Value of College Majors,” May 7, 2015. https://cew.georgetown.edu/cew-reports/valueofcollegemajors/.
+“Which Traits Predict Graduates’ Earnings?” The Economist, June 15, 2018. https://www.economist.com/graphic-detail/2018/06/15/which-traits-predict-graduates-earnings.
