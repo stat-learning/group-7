@@ -97,7 +97,6 @@ pairs(~ACTCM75 + UGDS + COSTT4_A, college.data.section)
 
 #### Bivariate Visual Representations
 
-We ran a random forest model on the data, which said that LO_INC_YR8_N has the highest importance in terms of both MSE and node purity. It is the number of low-income (less than $30,000 in nominal family income) students in overall 8-year completion cohort. Below, we've graphed both `LO_INC_YR8_N` and `PCTPELL` with our response variable. 
 
 ```{r Bivariate 1}
 ggplot(college.data.section, aes(x=PCTPELL , y=MN_EARN_WNE_P6)) + 
