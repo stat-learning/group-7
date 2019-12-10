@@ -70,6 +70,13 @@ ggplot(data = college.data.section, mapping = aes(y = MN_EARN_WNE_P6)) + geom_bo
 ```
 
 
+
+
+
+
+
+
+
 #### Visualizing Multicollinearity
 
 Because of the large amount of missing data still left, it's difficult to calculate the exact correlations between a few variables that we assume are important in this case. Here are some scatter plots of a few potentially important predictors:
