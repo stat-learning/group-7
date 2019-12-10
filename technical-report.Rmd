@@ -48,7 +48,7 @@ There are a lot of variables to work with in this dataset--too many, in fact. To
 
 Note also that we have limited the scope of our analysis to only four-year colleges (`ICLEVEL == 1`), as it's reasonable to think that the factors that are important for graduates of two-year or more specialized institutions would be different. 
 
-```{r}
+```{r Filter variables}
 section1 <- college.data.section %>%
   filter(ICLEVEL == 1) %>%
   select(REGION, 
@@ -84,17 +84,21 @@ numerics <- section1 %>%
 numerics[,] <- sapply(numerics[,], as.numeric)
 ```
 
+```{r Categorical classification}
+# Select categorical columns
+categoricals <- section1 %>%
+  select(REGION, 
+         CONTROL,
+         HIGHDEG)
+
+# Make columns factors
+categoricals[,] <- sapply(categoricals[,], as.factor)
+```
+
 ```{r Create final dataset}
 # Create final dataframe
 df_final <- cbind(numerics, 
-                  REGION = section1$REGION, 
-                  CONTROL = section1$CONTROL, 
-                  HIGHDEG = section1$HIGHDEG)
-
-# Convert categoricals to factors
-df_final$REGION <- factor(df_final$REGION) 
-df_final$CONTROL <- factor(df_final$CONTROL)
-df_final$HIGHDEG <- factor(df_final$HIGHDEG)
+                  categoricals)
 ```
 
 ### Exploratory data analysis
@@ -120,6 +124,8 @@ numerics.noncorr <- numerics[-c(highly_correlated)]
 missmap(df_final)
 ```
 
+#### Principal component analysis 
+
 ### Imputation
 
 As you might note in our exploratory data analysis, there's quite a bit of missing data in our dataset. One way to get around this issue is to attempt to impute the missing observations using the other predictors.
@@ -128,18 +134,45 @@ There are two different methods of imputing missing data that we use: (1) multip
 
 #### Multiple imputation with `mice`
 
+In order to impute our missing values using the `mice` package, we need to impute the continuous variables and categorical variables separately. To impute the continuous variables, we will use predictive mean matching. For the categorical variables, we'll use logistic regression.
+
+```{r Install and load mice package, message=FALSE, warning=FALSE}
+if(!require(mice)){
+    install.packages("mice")
+}
+library(mice)
+```
+
+Below we impute the continuous variables. 
+
+```{r Impute continuous variables, message=FALSE, cache=TRUE}
+numerics.mice <- mice(numerics, m=5, maxit = 50, method = 'pmm', seed = 500)
+numerics.mice.df <- numerics.mice$imp
+```
+
+```{r Impute categorical variables}
+
+```
+
+```{r Combine into one dataset}
+
+```
 
 #### Multiple imputation with `missForest`
 
-Below, we use the `missForest` package to impute our missing data. 
+Below, we use the `missForest` package to impute our missing data. Unlike the `mice` package, we can do this imputation in one step, which makes it much more simple. 
 
-```{r}
+```{r Install and load missForest package}
+
+```
+
+```{r Impute variables with missForest}
 library(missForest)
-df_imp <- missForest(df_final)
+missForest.imputation <- missForest(df_final)
 ```
 
 ```{r}
-imputed_df <- df_imp$ximp
+missForest_df <- missForest.imputation$ximp
 ```
 
 ### Modeling
@@ -159,4 +192,7 @@ summary(kitchen.sink.imputed)
 #### Random forest modeling
 
 ### Discussion
+
+### Sources
+
 
