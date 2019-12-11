@@ -114,9 +114,79 @@ df_final <- cbind(numerics,
 
 ## Exploratory data analysis
 
-With the data now in workable format, we can start to take a look at our response and predictors.
+With the data now in workable format, we can start to take a look at our response and predictors. Our new dataset has 2,822 observations of 82 variables--significantly cut down from our initial one. 
 
-PASTE IN EDA HERE, USE NEW DATA THOUGH
+### Response variable
+
+A histogram of our response variable (`MD_EARN_WNE_P6`) is shown below. Note that while this variable is distributed fairly normally, it has a long right tail.  
+
+```{r Histogram of response}
+ggplot(data = df_final, aes(df_final$MD_EARN_WNE_P6)) + 
+  geom_histogram(binwidth = 10) +
+  labs(x = "Median wage", y = "Frequency") +
+  theme_minimal()
+```
+
+One way to reduce the skew in our dependent would be to take the natural log of it. (This is common practice in Economics for income variables.) When we make a new variable equal to the log of the median wage, its histogram is much more "normal-looking." Moving forward, we use this new response variable as our dependent variable.
+
+```{r Histogram of log median wage}
+df_final <- df_final %>%
+  mutate(log_md_wage = log(MD_EARN_WNE_P6) + 0.001)
+
+ggplot(data = df_final, aes(df_final$log_md_wage)) + 
+  geom_histogram(bins = 40) +
+  labs(x = "Log of the median wage", y = "Frequency") +
+  theme_minimal()
+```
+
+### Pairwise scatterplots
+
+Before we jump in to any modeling, we should understand the relationship our dependent variable has with predictors of interest. Some interesting pairwise scatterplots are displayed below. 
+
+```{r Logwage v faminc}
+wage.faminc.plot <- ggplot(df_final, aes(x=FAMINC, y=log_md_wage)) + 
+  geom_point(alpha = 0.5) +
+  labs(x = "Family income", y = "Log of the median wage") +
+  theme_minimal()
+wage.faminc.plot
+```
+
+The relationship between family income and the log of the median wage seems fairly linear here, necessitating no transformation. 
+
+```{r Logwage v pell}
+wage.pell.plot <- ggplot(df_final, aes(x=PELL_EVER, y=log_md_wage)) + 
+  geom_point(alpha = 0.5) +
+  labs(x = "Number of students who have received a Pell Grant", y = "Log of the median wage") +
+  theme_minimal()
+wage.pell.plot
+```
+
+This, too, seems to be a linear relationship, requiring no transformation. 
+
+One relationship that does require a transformation is that below, of log wage versus the median wage after graduation. Note that there is a seeming discontinuity between this relationship after the median debt exceeds 1000. 
+
+```{r Logwage v median debt, warning = FALSE, message = FALSE}
+wage.meddebt.plot <- ggplot(df_final, aes(x=DEBT_MDN, y=log_md_wage)) + 
+  geom_point(alpha = 0.2) +
+  labs(x = "Median debt", y = "Log of the median wage") +
+  theme_minimal()
+wage.meddebt.plot
+```
+
+```{r Logwage v median debt, warning = FALSE, message = FALSE}
+df_final <- df_final %>%
+  mutate(logdebt = log(DEBT_MDN))
+
+wage.logmeddebt.plot <- ggplot(df_final, aes(x=logdebt, y=log_md_wage)) + 
+  geom_point(alpha = 0.2) +
+  labs(x = "Log of median debt", y = "Log of the median wage") +
+  theme_minimal()
+wage.logmeddebt.plot
+```
+
+While still not perfect, taking the log of the median debt seems to make this relationship a little better. 
+
+### Correlations
 
 ```{r}
 # Correlation matrix
@@ -328,7 +398,7 @@ summary(linear.model.1)
 plot(linear.model.1, 1)
 
 #QQ [;pt
-plot(linear.model.1, 2)]
+plot(linear.model.1, 2)
 
 #Scale location plot
 plot(linear.model.1, 3)
