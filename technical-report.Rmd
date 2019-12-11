@@ -615,12 +615,65 @@ ols_vif_tol(linear.model.1)
 corr_matrix <- cor(linear.model.1, use = "complete.obs")
 ```
 
-```{r}
+```{r Linear model with imputation}
 kitchen.sink.imputed <- lm(MD_EARN_WNE_P6 ~ ., data = imputed_df)
 summary(kitchen.sink.imputed)
 ```
 
-#### Random forest modeling
+### Lasso
+Since 
+```{r Lasso model without imputation}
+X <- model.matrix(MD_EARN_WNE_P6 ~ ., data = df_final)[, -77]
+Y <- df_final$MD_EARN_WNE_P6 
+grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
+
+lasso.1 <- glmnet(x = X, y = Y, alpha = 1,
+lambda = grid, standardize = TRUE)
+
+set.seed(1)
+cv.out1 = cv.glmnet(X, Y, alpha = 1)
+bestlam1 = cv.out1$lambda.min
+bestlam1
+
+#Rebuild with best lambda
+lasso_best1 <- glmnet(x = X, y = Y, alpha = 1, lambda = best_lam1)
+
+#Get coefficients of most important variables
+coef(lasso_best1)
+#Get training MSE for LASSO
+lasso.pred = predict(lasso.best1, s = bestlam1, X)
+MSE_lasso1 = mean ((lasso.pred - Y)^2)
+MSE_lasso1
+
+```
+
+
+```{r Lasso model with imputation}
+X.imp <- model.matrix(MD_EARN_WNE_P6 ~ ., data = imputed_df)[, -INSERTINDEXFORY!]
+Y.imp <- imputed_df$MD_EARN_WNE_P6 
+grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
+
+lasso.impute <- glmnet(x = X.imp, y = Y.imp, alpha = 1,
+lambda = grid, standardize = TRUE)
+
+set.seed(1)
+cv.out.imp = cv.glmnet(X.imp, Y.imp, alpha = 1)
+bestlam.imp = cv.out.imp$lambda.min
+bestlam.imp
+
+#Rebuild with best lambda
+lasso.best.imp <- glmnet(x = X.imp, y = Y.imp, alpha = 1, lambda = bestlam.imp)
+
+#Get coefficients of most important variables
+coef(lasso.best.imp)
+#Get training MSE for LASSO
+lasso.pred.imp = predict(lasso.best.imp, s = bestlam.imp, X.imp)
+MSE.lasso.imp = mean((lasso.pred.imp - Y.imp)^2)
+MSE.lasso.imp
+
+```
+
+### Random forest modeling
 
 In order to get a sense of what variables are deemed most important by a more data-oriented approach, we decided to run a random forest on our data set and measure variable importance.
 
