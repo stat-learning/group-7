@@ -843,10 +843,11 @@ In order to get a sense of what variables are deemed most important by a more da
 
 ```{r Random Forest}
 df_forest <- df_final %>%
-  select(-INSTNM, -MD_EARN_WNE_P6)
+  select(-INSTNM, -MD_EARN_WNE_P6) %>%
+  drop_na()
 
 set.seed(1)
-rf.college = randomForest(log_md_wage  ~., data = df_forest, na.action = na.roughfix, importance = TRUE)
+rf.college = randomForest(log_md_wage  ~., data = df_forest, importance = TRUE)
 importance(rf.college)
 varImpPlot(rf.college, cex = 0.6)
 print(rf.college)
@@ -857,7 +858,7 @@ df.forest.mice <- df.final.mice %>%
   select(-INSTNM, -MD_EARN_WNE_P6)
 
 set.seed(1)
-rf.college.mice = randomForest(log_md_wage  ~., data = df.forest.mice, na.action = na.roughfix, importance = TRUE)
+rf.college.mice = randomForest(log_md_wage  ~., data = df.forest.mice, importance = TRUE)
 importance(rf.college.mice)
 varImpPlot(rf.college.mice, cex = 0.6)
 print(rf.college.mice)
@@ -868,7 +869,7 @@ missForest_df_forest <- missForest_df %>%
   select(-INSTNM, -MD_EARN_WNE_P6)
 
 set.seed(1)
-rf.college.missForest = randomForest(log_md_wage  ~., data = missForest_df_forest, na.action = na.roughfix, importance = TRUE)
+rf.college.missForest = randomForest(log_md_wage  ~., data = missForest_df_forest, importance = TRUE)
 importance(rf.college.missForest)
 varImpPlot(rf.college.missForest, cex = 0.6)
 print(rf.college.missForest)
