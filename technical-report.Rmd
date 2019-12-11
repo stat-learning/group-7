@@ -323,8 +323,8 @@ plot(linear.model.1)
 
 #Check for multicollinearity
 library(olsrr)
-library(caret)
 
+library(caret)
 ols_vif_tol(linear.model.1)
 corr_matrix <- cor(linear.model.1, use = "complete.obs")
 ```
