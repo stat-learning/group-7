@@ -137,6 +137,23 @@ missmap(df_final)
 
 ### Principal component analysis 
 
+Conducting Principle Component Analysis can be useful in order to get a sense of waht our data looks like and what different kinds of colleges we're dealing with. there could be different "clusters" of colleges-- ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
+```{r PCA graph}
+set.seed(40)
+pca1 <- prcomp(college.nona)
+d <- data.frame(PC1 = pca1$x[, 1],
+                PC2 = pca1$x[, 2])
+ggplot(d, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = 0.5)
+```
+
+There seems to be a bit of clustering, but overall the cases seem to be spread out in a relatively even way. 
+```{r Scree Plot}
+screeplot(pca1)
+```
+
+The scree plot demonstrates that most of the variration is captured in the first principle component. This means that there are not many different kinds of schools, and that there is a pretty uniform relationship among the variables that predict median wage.
+
 ## Imputation
 
 As you might note in our exploratory data analysis, there's quite a bit of missing data in our dataset. One way to get around this issue is to attempt to impute the missing observations using the other predictors.
