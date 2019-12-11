@@ -97,9 +97,14 @@ numerics[,] <- sapply(numerics[,], as.numeric)
 ```{r Categorical classification}
 # Select categorical columns
 categoricals <- section1 %>%
-  mutate(REGION = factor(section1$REGION), 
-         CONTROL = factor(section1$CONTROL),
-         HIGHDEG = factor(section1$HIGHDEG)) 
+  select(REGION,
+         CONTROL,
+         HIGHDEG)
+
+categoricals <- categoricals %>%
+  mutate(REGION = factor(categoricals$REGION), 
+         CONTROL = factor(categoricals$CONTROL),
+         HIGHDEG = factor(categoricals$HIGHDEG)) 
 ```
 
 ```{r Create final dataset}
@@ -111,7 +116,14 @@ df_final <- cbind(INSTNM = as.character(section1$INSTNM),
 
 ## Exploratory data analysis
 
-With the data now in workable format, we can start to take a look at our response and predictors.
+With the data now in workable format, we can start to take a look at our response and predictors. Our new dataset has 2,822 observations of 82 variables--significantly cut down from our initial one. 
+
+Our response variable, MD_EARN_WNE_P6, is distributed fairly normally. A histogram of our response is shown below.
+
+```{r Histogram of response}
+ggplot(data = df_final, aes(df_final$MD_EARN_WNE_P6)) + 
+  geom_histogram()
+```
 
 PASTE IN EDA HERE, USE NEW DATA THOUGH
 
