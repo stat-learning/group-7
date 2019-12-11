@@ -188,18 +188,32 @@ While still not perfect, taking the log of the median debt seems to make this re
 
 ### Correlations
 
-```{r}
+We can dive into this data a little more deeply using a correlation matrix. We've made one and plotted it below. 
+
+```{r Correlation matrix}
+# Add in new variables into numerics
+numerics <- numerics %>%
+  mutate(logdebt = log(DEBT_MDN),
+         log_md_wage = log(MD_EARN_WNE_P6) + 0.001)
+
 # Correlation matrix
+if(!require(corrplot)){
+    install.packages("corrplot")
+}
+library(corrplot)
 library(caret)
 corr_matrix <- cor(numerics, use = "complete.obs")
+corrplot(corr_matrix, method="color", tl.cex = 0.4)
 ```
 
-```{r}
-# Remove highly correlated variables
-highly_correlated <- findCorrelation(corr_matrix, cutoff=0.75)
-sort(highly_correlated)
-numerics.noncorr <- numerics[-c(highly_correlated)]
+Much of the space in this matrix is taken up by the `PCIP01`, `PCIP03`, etc. variables. To zoom in on the other variables, we can take these out and re-run our correlation matrix.
+
+```{r Correlation matrix 2}
+corr_matrix2 <- cor(numerics[,40:ncol(numerics)], use = "complete.obs")
+corrplot(corr_matrix2, method="color", tl.cex = 0.5)
 ```
+
+As we'd expect, many of the debt measures are highly correlated with each other. Additionally, there are very strongly positive and strongly negative correlations in a cluster toward the bottom right of this graph, between variables like `FAMINC`, `FIRST_GEN`, and `AGE_ENTRY`. 
 
 ```{r Visualize missingness}
 missmap(df_final)
