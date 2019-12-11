@@ -13,8 +13,14 @@ output: pdf_document
 In this project, we aim to determine which factors have the strongest influence on the earnings of graduates from different institutions of higher education. To do so, we use data from the College Scorecard to predict the earnings of the median graduate from a specific institution 6 years after graduation. On top of personal characteristics such as demographics and family income, we find that institutional characteristics such as ___ may lead to higher incomes post-graduation. To estimate earnings, we used a number of different statistical techniques: (1) an OLS regression, with predictors pulled from the literature; (2) a random forest, with variable importances. Note also that due to the sheer amount of missing data in our dataset, we estimated the relationship between our predictors and earnings both without imputation, which removed many observations, as well as with observations imputed with a random forest technique.  
 
 # Introduction
+In the past decade, concern with analyzing and publicizing the employment outcomes of higher educational institutions and career training programs has become increasingly widespread. The release of the College Scorecard dataset by the Obama Administration in 2013 facilitated greater attention to the capacity of incoming undergraduate students to negotiate both the economic cost and prospective pay-off of higher education. In a public announcement, the U.S. Department of Education expressed their concern with enabling students make informed and economically sound college decisions, citing the Obama Administration’s commitment to providing “hardworking” students  “a real opportunity to earn an affordable, high quality degree or credential that offers a clear path to economic security and success.” 
 
-An enormous body of work has gone into understanding which factors lead to higher incomes. From a sociological lens, demographic factors such as race, gender, and family income are hugely important predictors of future earnings. From an economic perspective, ... CITE SOURCES.
+## Theories of Inequality
+Scholars examining the politics of social inequality have 
+
+Equality of opportunity v. condition
+
+
 
 # Data
 
