@@ -277,7 +277,7 @@ missmap(df_final_section)
 
 One last method to examine the structure and content of our data is principal component analysis (PCA). Conducting principle component analysis can be quite useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. After finding the primary axes of variation (principal components), we are able to determine whether there are different "clusters" of colleges: ones that focus more on certain kinds of areas of study, are more or less career focused, etc. 
 
-```{r PCA generation and plot}
+```{r PCA generation and plot, cache = TRUE}
 # Drop odd chunk of obs from numerics dataset
 numerics.section <- numerics[1:2634,]
 numerics.nona <- drop_na(numerics.section)
@@ -438,7 +438,7 @@ tail(pc2.ordered.rotations)
 
 ## Imputation
 
-As you might note in our exploratory data analysis, there's quite a bit of missing data in our dataset. One way to get around this issue is to attempt to impute the missing observations using the other predictors.
+As you might note in our exploratory data analysis, there wass quite a bit of missing data in our original dataset. While our final dataset is significantly better, with 98% of observations present, one way to get around this is to impute the missing observations using the other predictors.
 
 We use two different methods to impute missing data: (1) multiple imputation using the `mice` package, which uses predictive mean matching and logistic regression to perform multiple imputation on continuous and categorical data; and (2) imputation using `missForest`, which uses a random forest model to predict each missing observation, no matter the type thereof. Note that both of these techniques assume that the missing data is "missing at random" (MAR). While this is more likely the case after our data cleaning, this is still likely a stretch, so any results generated from the imputed data should be taken with a grain of salt. 
 
@@ -460,11 +460,11 @@ numerics.mice.df5 <- complete(numerics.mice, 5)
 
 ```{r Combine numerical imputed values into one dataset}
 # Create empty dataframe
-df_numerics.mice <- data.frame(matrix(NA, nrow = nrow(numerics.mice.df1), ncol = ncol(numerics.mice.df1)))
+df_numerics.mice <- data.frame(matrix(NA, nrow = 2822, ncol = 75))
 
 # Replace cells with the mean of the 5 imputed dataframes
-for (i in 1:nrow(numerics.mice.df1)) {
-  for (j in 1:ncol(numerics.mice.df1)) {
+for (i in 1:2822) {
+  for (j in 1:75) {
     df_numerics.mice[i,j] = mean(numerics.mice.df1[i,j],
                                  numerics.mice.df2[i,j],
                                  numerics.mice.df3[i,j],
@@ -474,7 +474,7 @@ for (i in 1:nrow(numerics.mice.df1)) {
 }
 
 # Rename columns to the correct names
-for (i in 1:ncol(df_numerics.mice)){
+for (i in 1:75){
   names(df_numerics.mice)[i] = names(numerics)[i]
 }
 ```
