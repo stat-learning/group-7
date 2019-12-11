@@ -275,7 +275,7 @@ missmap(df_final_section)
 
 ### Principal component analysis 
 
-One last method to examine the structure and content of our data is principal component analysis (PCA). Conducting principle component analysis can be quite useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. After finding the primary axes of variation (principal components), we are able to determine whether there are different "clusters" of colleges: ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
+One last method to examine the structure and content of our data is principal component analysis (PCA). Conducting principle component analysis can be quite useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. After finding the primary axes of variation (principal components), we are able to determine whether there are different "clusters" of colleges: ones that focus more on certain kinds of areas of study, are more or less career focused, etc. 
 
 ```{r PCA generation and plot}
 # Drop odd chunk of obs from numerics dataset
@@ -298,7 +298,7 @@ ggplot(pcs, aes(x = PC1, y = PC2)) +
   theme_minimal()
 ```
 
-This is a very interesting biplot. Along the first two principal components, there are two clear groups, one of which has a greater PC2 value than the other. Additionally, in the group of observations at the bottom half of the biplot, there appears to be the most density at high values for PC1 and low values for PC2. In the upper group of observations, the most density occurs at low values of PC1 and moderate values of PC2. 
+This is a very interesting biplot. Along the first two principal components, there are two clear groups, one of which has a greater PC2 value than the other. Additionally, in the group of observations at the bottom half of the biplot, there appears to be the most density at high values for PC1 and low values for PC2. In the upper group of observations, the most density occurs at low/mid values of PC1 and moderate values of PC2. 
 
 ```{r Scree plot}
 scree.data <- tibble(PC = 1:75,
@@ -393,7 +393,7 @@ As seen below, the 6 variables most associated with PC1 are:
 5. `WDRAW_ORIG_YR4_RT`
 6. `LO_INC_DEBT_MDN`
 
-The five most negatively associated with PC1 are: 
+The six most negatively associated with PC1 are: 
 
 1. `DEPENDENT`
 2. `PCIP26`
@@ -440,7 +440,7 @@ tail(pc2.ordered.rotations)
 
 As you might note in our exploratory data analysis, there's quite a bit of missing data in our dataset. One way to get around this issue is to attempt to impute the missing observations using the other predictors.
 
-There are two different methods of imputing missing data that we use: (1) multiple imputation using the `mice` package, which uses predictive mean matching and logistic regression to perform multiple imputation on continuous and categorical data; and (2) multiple imputation using `missForest`, which uses a random forest model to predict each missing observation, no matter the type thereof. Note that both of these techniques assume that the missing data is "missing at random" (MAR). This is likely not the case with our data, so results generated from the imputed data should be taken with a grain of salt. 
+We use two different methods to impute missing data: (1) multiple imputation using the `mice` package, which uses predictive mean matching and logistic regression to perform multiple imputation on continuous and categorical data; and (2) imputation using `missForest`, which uses a random forest model to predict each missing observation, no matter the type thereof. Note that both of these techniques assume that the missing data is "missing at random" (MAR). While this is more likely the case after our data cleaning, this is still likely a stretch, so any results generated from the imputed data should be taken with a grain of salt. 
 
 ### Imputation with `mice`
 
@@ -460,11 +460,11 @@ numerics.mice.df5 <- complete(numerics.mice, 5)
 
 ```{r Combine numerical imputed values into one dataset}
 # Create empty dataframe
-df_numerics.mice <- data.frame(matrix(NA, nrow = 2822, ncol = 78))
+df_numerics.mice <- data.frame(matrix(NA, nrow = nrow(numerics.mice.df1), ncol = ncol(numerics.mice.df1)))
 
 # Replace cells with the mean of the 5 imputed dataframes
-for (i in 1:2822) {
-  for (j in 1:78) {
+for (i in 1:nrow(numerics.mice.df1)) {
+  for (j in 1:ncol(numerics.mice.df1)) {
     df_numerics.mice[i,j] = mean(numerics.mice.df1[i,j],
                                  numerics.mice.df2[i,j],
                                  numerics.mice.df3[i,j],
@@ -474,14 +474,18 @@ for (i in 1:2822) {
 }
 
 # Rename columns to the correct names
-for (i in 1:78){
+for (i in 1:ncol(df_numerics.mice)){
   names(df_numerics.mice)[i] = names(numerics)[i]
 }
 ```
 
 ```{r Create final mice imputed dataset}
-df.final.mice <- cbind.data.frame(df_numerics.mice,
+df.final.mice <- cbind.data.frame(INSTNM = df_final$INSTNM,
+                                  df_numerics.mice,
                                   categoricals)
+
+df.final.mice <- df.final.mice %>%
+  mutate(INSTNM = as.character(INSTNM))
 ```
 
 ### Multiple imputation with `missForest`
