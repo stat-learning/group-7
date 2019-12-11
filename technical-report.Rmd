@@ -109,7 +109,7 @@ categoricals[,] <- sapply(categoricals[,], as.factor)
 # Create final dataframe
 df_final <- cbind(numerics, 
                   categoricals,
-                  section1$INSTNM)
+                  INSTNM = section1$INSTNM)
 ```
 
 ## Exploratory data analysis
@@ -137,10 +137,11 @@ missmap(df_final)
 
 ### Principal component analysis 
 
-Conducting Principle Component Analysis can be useful in order to get a sense of waht our data looks like and what different kinds of colleges we're dealing with. there could be different "clusters" of colleges-- ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
+Conducting Principle Component Analysis can be useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. There could be different "clusters" of colleges-- ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
+
 ```{r PCA graph}
 set.seed(40)
-pca1 <- prcomp(college.nona)
+pca1 <- prcomp(drop_na(numerics))
 d <- data.frame(PC1 = pca1$x[, 1],
                 PC2 = pca1$x[, 2])
 ggplot(d, aes(x = PC1, y = PC2)) +
@@ -148,6 +149,7 @@ ggplot(d, aes(x = PC1, y = PC2)) +
 ```
 
 There seems to be a bit of clustering, but overall the cases seem to be spread out in a relatively even way. 
+
 ```{r Scree Plot}
 screeplot(pca1)
 ```
