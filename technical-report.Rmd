@@ -8,19 +8,55 @@ date: "12/11/2019"
 output: pdf_document
 ---
 
+```{r Load libraries, warning=FALSE, message=FALSE, include=FALSE}
+library(tidyverse)
+if(!require(Amelia)){
+    install.packages("Amelia")
+}
+library(Amelia)
+if(!require(corrplot)){
+    install.packages("corrplot")
+}
+library(corrplot)
+if(!require(caret)){
+    install.packages("caret")
+}
+library(caret)
+if(!require(mice)){
+    install.packages("mice")
+}
+library(mice)
+if(!require(missForest)){
+    install.packages("missForest")
+}
+library(missForest)
+if(!require(olsrr)){
+    install.packages("olsrr")
+}
+library(olsrr)
+if(!require(randomForest)){
+    install.packages("randomForest")
+}
+library(randomForest)
+if(!require(ggrepel)){
+    install.packages("ggrepel")
+}
+library(ggrepel)
+```
+
 # Abstract
 
 In this project, we aim to determine which factors have the strongest influence on the earnings of graduates from different institutions of higher education. To do so, we use data from the College Scorecard to predict the earnings of the median graduate from a specific institution 6 years after graduation. On top of personal characteristics such as demographics and family income, we find that institutional characteristics such as ___ may lead to higher incomes post-graduation. To estimate earnings, we used a number of different statistical techniques: (1) an OLS regression, with predictors pulled from the literature; (2) a random forest, with variable importances. Note also that due to the sheer amount of missing data in our dataset, we estimated the relationship between our predictors and earnings both without imputation, which removed many observations, as well as with observations imputed with a random forest technique.  
 
 # Introduction
+
 In the past decade, concern with analyzing and publicizing the employment outcomes of higher educational institutions and career training programs has become increasingly widespread. The release of the College Scorecard dataset by the Obama Administration in 2013 facilitated greater attention to the capacity of incoming undergraduate students to negotiate both the economic cost and prospective pay-off of higher education. In a public announcement, the U.S. Department of Education expressed their concern with enabling students tp make informed and economically sound college decisions, citing the Obama Administration’s commitment to providing “hardworking” students  “a real opportunity to earn an affordable, high quality degree or credential that offers a clear path to economic security and success.” 
 
 ## Theories of Inequality
+
 Scholars examining the politics of social inequality have 
 
 Equality of opportunity v. condition
-
-
 
 # Data
 
@@ -28,9 +64,7 @@ Equality of opportunity v. condition
 
 To approach this problem, we use data from the College Scorecard, a project of the United States Department of Education. Below, we start by downloading the data. Note that we're starting here with data only from the 2014-15 academic year. 
 
-```{r Data download, message=FALSE, warning=FALSE}
-library(tidyverse)
-library(Amelia)
+```{r Data download, message=FALSE, warning=FALSE, cache=TRUE}
 college.data <- read.csv("2014_2015_college_data.csv", header = TRUE)
 ```
 
@@ -39,8 +73,6 @@ This dataset contains 7,703 observations of 1,977 variables. Each observation re
 Now that we have this data, we need to transform it so that R can recognize missing values. Additionally, we (1) drop observations which do not contain our response variable, `MD_EARN_WNE_P6`, which is the "median earnings of students working and not enrolled 6 years after entry," and (2) drop variables for which all observations are N/A.  
 
 ```{r Clean the data}
-library(dplyr)
-library(tidyverse)
 not_all_na <- function(x) any(!is.na(x))
 college.data <- college.data %>%
   replace(.=="NULL", NA) %>%
@@ -57,7 +89,6 @@ There are a lot of variables to work with in this dataset--too many, in fact. To
 Note also that we have limited the scope of our analysis to only four-year colleges (`ICLEVEL == 1`), as it's reasonable to think that the factors that are important for graduates of two-year or more specialized institutions would be different. 
 
 ```{r Filter variables}
-
 section1 <- college.data.section %>%
   filter(ICLEVEL == 1) %>%
   select(INSTNM,
@@ -72,12 +103,12 @@ section1 <- college.data.section %>%
          TUITFTE, 
          PCTFLOAN, 
          WDRAW_ORIG_YR4_RT, 
-         FIRSTGEN_WDRAW_ORIG_YR4_RT, 
-         LO_INC_WDRAW_ORIG_YR4_RT, 
          DEBT_MDN, 
-         LO_INC_DEBT_MDN:NOTFIRSTGEN_DEBT_MDN, 
+         LO_INC_DEBT_MDN:HI_INC_DEBT_MDN,
+         PELL_DEBT_MDN:NOTFIRSTGEN_DEBT_MDN, 
          FEMALE, 
-         LOAN_EVER:FAMINC, -VETERAN, 
+         LOAN_EVER:AGE_ENTRY,
+         DEPENDENT:FAMINC, -VETERAN, 
          FAMINC,
          MD_EARN_WNE_P6)
 ```
@@ -101,20 +132,25 @@ categoricals <- section1 %>%
          CONTROL,
          HIGHDEG)
 
-# Make columns factors
-categoricals[,] <- sapply(categoricals[,], as.factor)
+categoricals <- categoricals %>%
+  mutate(REGION = factor(REGION),
+         CONTROL = factor(CONTROL),
+         HIGHDEG = factor(HIGHDEG))
 ```
 
 ```{r Create final dataset}
 # Create final dataframe
-df_final <- cbind(numerics, 
-                  categoricals,
-                  INSTNM = section1$INSTNM)
+df_final <- cbind(INSTNM = as.character(section1$INSTNM),
+                  numerics, 
+                  categoricals)
+
+df_final <- df_final %>%
+  mutate(INSTNM = as.character(INSTNM))
 ```
 
 ## Exploratory data analysis
 
-With the data now in workable format, we can start to take a look at our response and predictors. Our new dataset has 2,822 observations of 82 variables--significantly cut down from our initial one. 
+With the data now in workable format, we can start to take a look at our response and predictors. Our new dataset has 2,822 observations of 77 variables--significantly cut down from our initial one. 
 
 ### Response variable
 
@@ -143,7 +179,7 @@ ggplot(data = df_final, aes(df_final$log_md_wage)) +
 
 Before we jump in to any modeling, we should understand the relationship our dependent variable has with predictors of interest. Some interesting pairwise scatterplots are displayed below. 
 
-```{r Logwage v faminc}
+```{r Logwage v faminc, message=FALSE, warning=FALSE}
 wage.faminc.plot <- ggplot(df_final, aes(x=FAMINC, y=log_md_wage)) + 
   geom_point(alpha = 0.5) +
   labs(x = "Family income", y = "Log of the median wage") +
@@ -153,7 +189,7 @@ wage.faminc.plot
 
 The relationship between family income and the log of the median wage seems fairly linear here, necessitating no transformation. 
 
-```{r Logwage v pell}
+```{r Logwage v pell, message=FALSE, warning=FALSE}
 wage.pell.plot <- ggplot(df_final, aes(x=PELL_EVER, y=log_md_wage)) + 
   geom_point(alpha = 0.5) +
   labs(x = "Number of students who have received a Pell Grant", y = "Log of the median wage") +
@@ -173,7 +209,7 @@ wage.meddebt.plot <- ggplot(df_final, aes(x=DEBT_MDN, y=log_md_wage)) +
 wage.meddebt.plot
 ```
 
-```{r Logwage v median debt, warning = FALSE, message = FALSE}
+```{r Logwage v log median debt, warning = FALSE, message = FALSE}
 df_final <- df_final %>%
   mutate(logdebt = log(DEBT_MDN))
 
@@ -197,48 +233,208 @@ numerics <- numerics %>%
          log_md_wage = log(MD_EARN_WNE_P6) + 0.001)
 
 # Correlation matrix
-if(!require(corrplot)){
-    install.packages("corrplot")
-}
-library(corrplot)
-library(caret)
 corr_matrix <- cor(numerics, use = "complete.obs")
 corrplot(corr_matrix, method="color", tl.cex = 0.4)
 ```
 
 Much of the space in this matrix is taken up by the `PCIP01`, `PCIP03`, etc. variables. To zoom in on the other variables, we can take these out and re-run our correlation matrix.
 
-```{r Correlation matrix 2}
+```{r Correlation matrix 2, cache=TRUE}
 corr_matrix2 <- cor(numerics[,40:ncol(numerics)], use = "complete.obs")
 corrplot(corr_matrix2, method="color", tl.cex = 0.5)
 ```
 
 As we'd expect, many of the debt measures are highly correlated with each other. Additionally, there are very strongly positive and strongly negative correlations in a cluster toward the bottom right of this graph, between variables like `FAMINC`, `FIRST_GEN`, and `AGE_ENTRY`. 
 
-```{r Visualize missingness}
+### Missingness
+
+One piece of the pie that proved tricky for us moving forward in our analysis has been the amount of missingness present in the College Scorecard dataset. As shown below, fully 61% of the data in the 2014-2015 College Scorecard file is missing. (Note that we've actually attached a picture instead of the code output--the image generated by the code itself takes around 40 Mb.)
+
+```{r Visualize missingness for full dataset, eval = FALSE}
+missmap(college.data)
+```
+
+![](Missingness.png)
+
+Fortunately for us, after all of our data cleaning, this picture looks much better. In our final dataset (`df_final`), 93% of observations are present. 
+
+One interesting thing to note in this missingness map is the giant block of missing data in the bottom left. This missing data chunk, clearly not missing at random, is comprised mostly of schools such as Keiser University, Harrison College, Rasmussen College, Strayer University. These schools have a couple things in common: for one, all have multiple branches, and perhaps most tellingly, these are not categorized as degree-granting institutions. For these schools, the College Scorecard does not report the shares of degrees awarded in a particular major, the racial makeup of these schools, or how much tuition revenue these schools receive per student.
+
+```{r Visualize missingness for df_final, cache=TRUE}
 missmap(df_final)
+```
+
+In our scenario, observations are not exactly a precious resource; we could afford to get rid of this chunk of observations. This has some benefits as well. In addition to being theoretically sound (as non-degree granting institutions may play a different role in determining future income than degree-granting institutions), these observations are distinctly not missing at random. This means that any imputation (done later) to determine these values would be fundamentally flawed. 
+
+After ridding the dataset of this chunk of observations, our new missingnessmap looks as follows. Note that fully 98% of our observations are present. Not too bad! 
+
+```{r Visualize missingness without red chunk, cache=TRUE}
+df_final_section <- df_final[1:2634,]
+missmap(df_final_section)
 ```
 
 ### Principal component analysis 
 
-Conducting Principle Component Analysis can be useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. There could be different "clusters" of colleges-- ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
+One last method to examine the structure and content of our data is principal component analysis (PCA). Conducting principle component analysis can be quite useful in order to get a sense of what our data looks like and what different kinds of colleges we're dealing with. After finding the primary axes of variation (principal components), we are able to determine whether there are different "clusters" of colleges: ones that focus more on certain kinds of areas of study, or are more or less career focuses, etc. 
 
-```{r PCA graph}
+```{r PCA generation and plot}
+# Drop odd chunk of obs from numerics dataset
+numerics.section <- numerics[1:2634,]
+numerics.nona <- drop_na(numerics.section)
+df_final_section_nona <- drop_na(df_final_section)
+
+# PCA
 set.seed(40)
-pca1 <- prcomp(drop_na(numerics))
-d <- data.frame(PC1 = pca1$x[, 1],
-                PC2 = pca1$x[, 2])
-ggplot(d, aes(x = PC1, y = PC2)) +
-  geom_point(alpha = 0.5)
+pca <- prcomp(numerics.nona, scale. = TRUE)
+pcs <- as.data.frame(pca$x)
+pc1 <- pca$rotation[, 1]
+pc2 <- pca$rotation[, 2]
+pca3 <- pca$rotation[, 3]
+pcs$INSTNM <- df_final_section_nona$INSTNM
+
+# Plot
+ggplot(pcs, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = .5) +
+  theme_minimal()
 ```
 
-There seems to be a bit of clustering, but overall the cases seem to be spread out in a relatively even way. 
+This is a very interesting biplot. Along the first two principal components, there are two clear groups, one of which has a greater PC2 value than the other. Additionally, in the group of observations at the bottom half of the biplot, there appears to be the most density at high values for PC1 and low values for PC2. In the upper group of observations, the most density occurs at low values of PC1 and moderate values of PC2. 
 
-```{r Scree Plot}
-screeplot(pca1)
+```{r Scree plot}
+scree.data <- tibble(PC = 1:75,
+                     PVE = pca$sdev^2 /
+                       sum(pca$sdev^2))
+ggplot(scree.data, aes(x = PC, y = PVE)) +
+  geom_line() + 
+  geom_point() +
+  theme_minimal()
 ```
 
-The scree plot demonstrates that most of the variration is captured in the first principle component. This means that there are not many different kinds of schools, and that there is a pretty uniform relationship among the variables that predict median wage.
+As seen in the scree plot above, there is a clear, distinct elbow in our data. The first two principal components explain a little less 30% of the variation in the data, after which each individual principal component becomes increasingly meaningless. 
+
+#### A deeper dive
+
+Clearly, the first and second principal components capture important sources of variation among colleges. However, we don't yet know what they actually are. Taking inspiration from group 9 (Paul Nguyen and David Herrero Quevedo), we dove deeper into which variables are actually important in making up these components. 
+
+As an initial step, it may be illuminating to label a random sample of these observations to see if any obvious patterns pop out. After, we plot the location of traditional groups (e.g. the Ivies) to see if there is any validity to grouping these elite colleges together. 
+
+```{r Sample schools in biplot}
+set.seed(532)
+random.schools <- sample(pcs$INSTNM, 10)
+ivies <- c("Brown University", "Columbia University", "Cornell University", "Dartmouth College", "Harvard University", "University of Pennsylvania", "Princeton University", "Yale University")
+
+# Plot random schools
+ggplot(pcs, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = .1) +
+  geom_text_repel(data = subset(pcs, INSTNM %in% random.schools),
+            aes(label = INSTNM)) +
+  geom_point(color = "red",
+             data = subset(pcs, INSTNM %in% random.schools,
+             alpha = .5)) +
+  theme_minimal()
+```
+
+Unfortunately, it's not immediately obvious through labeling some schools on these principal components what the components actually mean. To try to get more recognizable names, we've labeled the Ivy League.
+
+```{r Ivies in biplot}
+ggplot(pcs, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = .1) +
+  geom_text_repel(data = subset(pcs, INSTNM %in% ivies),
+            aes(label = INSTNM)) +
+  geom_point(color = "red",
+             data = subset(pcs, INSTNM %in% ivies,
+             alpha = .5)) +
+  theme_minimal()
+```
+
+Clearly here, the Ivies (or at least the ones which survived our purge of non-NA data) are all on the left side of the biplot, indicating that the left side of the plot (when PC1 is negative) may be a region with more prestigious, smaller schools. Harvard is a notable outlier from both main groups. 
+
+For sheer curiosity's sake, Reed's location on this biplot is shown below:
+
+```{r Reed in biplot}
+ggplot(pcs, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = .1) +
+  geom_text_repel(data = subset(pcs, INSTNM %in% c("Reed College")),
+            aes(label = INSTNM)) +
+  geom_point(color = "red",
+             data = subset(pcs, INSTNM %in% c("Reed College"),
+             alpha = .5)) +
+  theme_minimal()
+```
+
+Good news for Reed graduates; we're almost in exactly the same spot as most of the Ivies! 
+
+While plotting the locations of any given college on the principal component biplot is fun (and a little informative), it doesn't give us a deep understanding of what these components mean. Moving forward, we took a more statistical approach toward understanding this. 
+
+Below, we've plotted the "rotation" of our first principal component. Essentially, this plot shows how each variable is weighted when making PC1: a strong, positive number indicates that PC1 is strongly associated with a given variable, and vice versa.  
+
+```{r Understanding PC1}
+pca_rotations <- data.frame(pca$rotation)
+pca_rotations$variables <- rownames(pca_rotations)
+pc1.ordered.rotations <- pca_rotations[order(-pca_rotations$PC1),]
+pc2.ordered.rotations <- pca_rotations[order(-pca_rotations$PC2),]
+
+ggplot(pca_rotations, 
+       aes(x = variables, y = PC1)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = "Variables", y = "First PC") +
+  theme(text = element_text(size = 5.5)) 
+```
+
+Due to the sheer amount of variables in our PCA, it's hard to read which variables are positively and negatively correlated with the first PC. For the reader's sake, we've also sorted the variables by their impact on PC1. 
+
+As seen below, the 6 variables most associated with PC1 are: 
+
+1. `FIRST_GEN`
+2. `AGE_ENTRY`
+3. `PELL_EVER`
+4. `PCTPELL`
+5. `WDRAW_ORIG_YR4_RT`
+6. `LO_INC_DEBT_MDN`
+
+The five most negatively associated with PC1 are: 
+
+1. `DEPENDENT`
+2. `PCIP26`
+3. `PCIP45`
+4. `PCIP23`
+5. `PCIP54`
+6. `FAMINC`
+
+One way of interpreting PC1, then, could be as a measure of the privelege (or lack thereof) of the students. 
+
+```{r PC1 associated variables}
+head(pc1.ordered.rotations)
+tail(pc1.ordered.rotations)
+```
+
+We can do the same thing with the second principal component. 
+
+As seen below, the 6 variables most correlated with PC2 are:
+
+1. `PCIP15`
+2. `NUMBRANCH`
+3. `PCIP11`
+4. `PCTFLOAN`
+5. `PCTPELL`
+6. `PCIP10`
+
+The six most negatively correlated with PC2 are:
+
+1. `logdebt`
+2. `FEMALE_DEBT_MDN`
+3. `FIRSTGEN_DEBT_MDN`
+4. `PELL_DEBT_MDN`
+5. `NOTFIRSTGEN_DEBT_MDN`
+6. `DEBT_MDN`
+
+This principal component is a little less intuitive to understand, but clearly relates somewhat to the indebtedness of the student body, in addition to their specific major interests. Higher PC2 values may imply more of a focus on more rewarded majors (such as engineering or computer science).
+
+```{r PC2 associated variables}
+head(pc2.ordered.rotations)
+tail(pc2.ordered.rotations)
+```
 
 ## Imputation
 
@@ -246,16 +442,9 @@ As you might note in our exploratory data analysis, there's quite a bit of missi
 
 There are two different methods of imputing missing data that we use: (1) multiple imputation using the `mice` package, which uses predictive mean matching and logistic regression to perform multiple imputation on continuous and categorical data; and (2) multiple imputation using `missForest`, which uses a random forest model to predict each missing observation, no matter the type thereof. Note that both of these techniques assume that the missing data is "missing at random" (MAR). This is likely not the case with our data, so results generated from the imputed data should be taken with a grain of salt. 
 
-### Multiple imputation with `mice`
+### Imputation with `mice`
 
 In order to impute our missing values using the `mice` package, we need to impute the continuous variables and categorical variables separately. To impute the continuous variables, we will use predictive mean matching. Fortunately for us, there are no missing observations for the categorical variables, so we do not have to impute anything there.
-
-```{r Install and load mice package, message=FALSE, warning=FALSE}
-if(!require(mice)){
-    install.packages("mice")
-}
-library(mice)
-```
 
 Below we impute the continuous variables. 
 
@@ -277,7 +466,7 @@ df_numerics.mice <- data.frame(matrix(NA, nrow = 2822, ncol = 78))
 for (i in 1:2822) {
   for (j in 1:78) {
     df_numerics.mice[i,j] = mean(numerics.mice.df1[i,j],
-                                 numerics.mice.df2[i, j],
+                                 numerics.mice.df2[i,j],
                                  numerics.mice.df3[i,j],
                                  numerics.mice.df4[i,j],
                                  numerics.mice.df5[i,j])
@@ -299,13 +488,6 @@ df.final.mice <- cbind.data.frame(df_numerics.mice,
 
 Below, we use the `missForest` package to impute our missing data. Unlike the `mice` package, we can do this imputation in one step, which makes it much more simple. 
 
-```{r Install and load missForest package}
-if(!require(missForest)){
-    install.packages("missForest")
-}
-library(missForest)
-```
-
 ```{r Impute variables with missForest, cache=TRUE}
 missForest.imputation <- missForest(df_final)
 ```
@@ -322,7 +504,7 @@ With our data now in workable format, with two different ways of imputing missin
 
 Following the literature cited in our introduction, we built a theoretical model on what might impact graduates' earnings. This model is described with the equation below.
 
-$$median \space earnings = \alpha + \beta_1 college \space characteristics + \beta_2 demographics + \epsilon$$
+$$median \space earnings = \alpha + \beta_1 college \space characteristics + \beta_2 student \space demographics + \epsilon$$
 
 To capture **college characteristics**, we use the following variables:
 - percentage of degrees awarded in many different majors (`PCIP01`, `PCIP02`, etc.)
@@ -425,9 +607,6 @@ par(mfrow = c(2, 2))
 plot(linear.model.1)
 
 #Check for multicollinearity
-library(olsrr)
-
-library(caret)
 ols_vif_tol(linear.model.1)
 corr_matrix <- cor(linear.model.1, use = "complete.obs")
 ```
@@ -445,7 +624,6 @@ In order to get a sense of what variables are deemed most important by a more da
 df_forest <- df_final %>%
   select(-INSTNM)
 
-library(randomForest)
 set.seed(1)
 rf.college = randomForest(MD_EARN_WNE_P6  ~., data = df_forest, na.action = na.roughfix, importance = TRUE)
 importance(rf.college)
