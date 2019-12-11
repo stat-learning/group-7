@@ -541,6 +541,8 @@ To capture **student demographics**, we use the following variables from our dat
 
 Since we essentially have three datasets with these variables, it's an interesting exercise to see how the results of our analysis might differ with and without imputation. To start, we'll run a linear model of the above specification on the dataset without any imputation. 
 
+While we initially wanted to split our data into training and test datasets to simulate the test MSE of our model, this proved impossible. Since there are levels in some of the categorical variables that have very few observations, it was not possible to get a test dataset which did not have levels that the training dataset had not seen before, resulting in a N/A value for the test MSE. As a next-best, we calculated the training MSE of our models for comparison.
+
 ```{r Linear model without imputation}
 linear.model.1 <- lm(log_md_wage ~ 
                        PCIP01 +
@@ -620,6 +622,13 @@ plot(linear.model.1)
 # #Check for multicollinearity
 # ols_vif_tol(linear.model.1)
 # corr_matrix <- cor(linear.model.1, use = "complete.obs")
+```
+
+To get an estimate of the accuracy of this model, we estimate our training mean squared error. 
+
+```{r Test MSE for linear model without imputation}
+MSE_lin = (df_final_section$log_md_wage - predict.lm(linear.model.1, df_final_section)) ^ 2
+MSE_lin
 ```
 
 ```{r Linear model with mice imputation}
@@ -803,38 +812,36 @@ lasso.1 = glmnet(x = X, y = Y, alpha = 1, lambda = grid)
 lasso.coef = predict(lasso.1, type = "coefficients", s = bestlam1)[1:nrow(coef(lasso.1)),]
 nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
 length(nonzero.lasso.coef)
+```
+
+Here, the lasso regression resulted in 
+
+```{r Lasso model with mice imputation}
+# Data setup
+lasso.data <- cbind(numerics.section,
+                    categoricals[1:2634,])
+lasso.data <- lasso.data %>%
+  select(-MD_EARN_WNE_P6)
+lasso.data.nona <- drop_na(lasso.data)
+X <- model.matrix(log_md_wage ~ ., data = lasso.data.nona)[, -1]
+Y <- lasso.data.nona$log_md_wage 
+grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
+
+# Cross validation to find optimal penalty term
+set.seed(1)
+cv.out1 = cv.glmnet(X, Y, alpha = 1)
+bestlam1 = cv.out1$lambda.min
+
+#Run lasso and get non-zero coefficients of most important variables
+lasso.1 = glmnet(x = X, y = Y, alpha = 1, lambda = grid)
+lasso.coef = predict(lasso.1, type = "coefficients", s = bestlam1)[1:nrow(coef(lasso.1)),]
+nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
+length(nonzero.lasso.coef)
 
 #Get training MSE for LASSO
 lasso.pred = predict(lasso.1, s = bestlam1, X)
 MSE_lasso1 = mean ((lasso.pred - Y)^2)
 MSE_lasso1
-```
-
-
-
-```{r Lasso model with imputation}
-X.imp <- model.matrix(MD_EARN_WNE_P6 ~ ., data = imputed_df)[, -INSERTINDEXFORY!]
-Y.imp <- imputed_df$MD_EARN_WNE_P6 
-grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
-
-lasso.impute <- glmnet(x = X.imp, y = Y.imp, alpha = 1,
-lambda = grid, standardize = TRUE)
-
-set.seed(1)
-cv.out.imp = cv.glmnet(X.imp, Y.imp, alpha = 1)
-bestlam.imp = cv.out.imp$lambda.min
-bestlam.imp
-
-#Rebuild with best lambda
-lasso.best.imp <- glmnet(x = X.imp, y = Y.imp, alpha = 1, lambda = bestlam.imp)
-
-#Get coefficients of most important variables
-coef(lasso.best.imp)
-#Get training MSE for LASSO
-lasso.pred.imp = predict(lasso.best.imp, s = bestlam.imp, X.imp)
-MSE.lasso.imp = mean((lasso.pred.imp - Y.imp)^2)
-MSE.lasso.imp
-
 ```
 
 ### Random forest modeling
