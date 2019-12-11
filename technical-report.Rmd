@@ -8,17 +8,17 @@ date: "12/11/2019"
 output: pdf_document
 ---
 
-## Abstract
+# Abstract
 
 In this project, we aim to determine which factors have the strongest influence on the earnings of graduates from different institutions of higher education. To do so, we use data from the College Scorecard to predict the earnings of the median graduate from a specific institution 6 years after graduation. On top of personal characteristics such as demographics and family income, we find that institutional characteristics such as ___ may lead to higher incomes post-graduation. To estimate earnings, we used a number of different statistical techniques: (1) an OLS regression, with predictors pulled from the literature; (2) a random forest, with variable importances. Note also that due to the sheer amount of missing data in our dataset, we estimated the relationship between our predictors and earnings both without imputation, which removed many observations, as well as with observations imputed with a random forest technique.  
 
-## Introduction
+# Introduction
 
 An enormous body of work has gone into understanding which factors lead to higher incomes. From a sociological lens, demographic factors such as race, gender, and family income are hugely important predictors of future earnings. From an economic perspective, ... CITE SOURCES.
 
-## Data
+# Data
 
-### Download and clean
+## Download and clean
 
 To approach this problem, we use data from the College Scorecard, a project of the United States Department of Education. Below, we start by downloading the data. Note that we're starting here with data only from the 2014-15 academic year. 
 
@@ -103,7 +103,7 @@ df_final <- cbind(numerics,
                   section1$INSTNM)
 ```
 
-### Exploratory data analysis
+## Exploratory data analysis
 
 With the data now in workable format, we can start to take a look at our response and predictors.
 
@@ -126,15 +126,15 @@ numerics.noncorr <- numerics[-c(highly_correlated)]
 missmap(df_final)
 ```
 
-#### Principal component analysis 
+### Principal component analysis 
 
-### Imputation
+## Imputation
 
 As you might note in our exploratory data analysis, there's quite a bit of missing data in our dataset. One way to get around this issue is to attempt to impute the missing observations using the other predictors.
 
 There are two different methods of imputing missing data that we use: (1) multiple imputation using the `mice` package, which uses predictive mean matching and logistic regression to perform multiple imputation on continuous and categorical data; and (2) multiple imputation using `missForest`, which uses a random forest model to predict each missing observation, no matter the type thereof. Note that both of these techniques assume that the missing data is "missing at random" (MAR). This is likely not the case with our data, so results generated from the imputed data should be taken with a grain of salt. 
 
-#### Multiple imputation with `mice`
+### Multiple imputation with `mice`
 
 In order to impute our missing values using the `mice` package, we need to impute the continuous variables and categorical variables separately. To impute the continuous variables, we will use predictive mean matching. Fortunately for us, there are no missing observations for the categorical variables, so we do not have to impute anything there.
 
@@ -183,7 +183,7 @@ df.final.mice <- cbind.data.frame(df_numerics.mice,
                                   categoricals)
 ```
 
-#### Multiple imputation with `missForest`
+### Multiple imputation with `missForest`
 
 Below, we use the `missForest` package to impute our missing data. Unlike the `mice` package, we can do this imputation in one step, which makes it much more simple. 
 
@@ -202,13 +202,97 @@ missForest.imputation <- missForest(df_final)
 missForest_df <- missForest.imputation$ximp
 ```
 
-### Modeling
+## Modeling
 
-#### Linear models
+With our data now in workable format, with two different ways of imputing missingness, we now turn to modeling our data. 
 
-```{r}
-kitchen.sink <- lm(MD_EARN_WNE_P6 ~ ., data = df_final)
-summary(kitchen.sink)
+### Linear models
+
+Following the literature cited in our introduction, we built a theoretical model on what might impact graduates' earnings. This model is described with the equation below.
+
+$$median \space earnings = \alpha + \beta_1 college \space characteristics + \beta_2 demographics + \epsilon$$
+
+To capture **college characteristics**, we use the following variables:
+- percentage of degrees awarded in many different majors (`PCIP01`, `PCIP02`, etc.)
+- size of the school (`UGDS`)
+- instructional expenditures per student (`INEXPFTE`)
+- region of the school (`REGION`)
+- share of students that are part-time (`PPTUG_EF`)
+- tuition revenue per student (`TUITFTE`)
+- ownership of school (`CONTROL`)
+- highest degree awarded (`HIGHDEG`)
+
+To capture **student demographics**, we use the following variables from our dataset:
+- racial makeup of the school (`UGDS_WHITE`)
+- debt after graduation (`DEBT_MDN`)
+- gender makeup of school (`FEMALE`)
+- age makeup of school (`AGE_ENTRY`)
+- share of students that are first-generation (`FIRST_GEN`)
+- median family income (`FAMINC`)
+- share of students who have received a loan (`LOAN_EVER`)
+- share of students who have received a Pell Grant (`PELL_EVER`)
+
+#### Without imputation
+
+Since we essentially have three datasets with these variables, it's an interesting exercise to see how the results of our analysis might differ with and without imputation. To start, we'll run a linear model of the above specification on the dataset without any imputation. 
+
+```{r Linear model without imputation}
+linear.model.1 <- lm(MD_EARN_WNE_P6 ~ 
+                       PCIP01 +
+                       PCIP03 +
+                       PCIP04 +
+                       PCIP05 +
+                       PCIP09 +
+                       PCIP10 +
+                       PCIP11 +
+                       PCIP12 +
+                       PCIP13 + 
+                       PCIP14 +
+                       PCIP15 +
+                       PCIP16 +
+                       PCIP19 +
+                       PCIP22 +
+                       PCIP23 +
+                       PCIP24 +
+                       PCIP25 +
+                       PCIP26 +
+                       PCIP27 +
+                       PCIP29 +
+                       PCIP30 +
+                       PCIP31 + 
+                       PCIP38 +
+                       PCIP39 +
+                       PCIP40 +
+                       PCIP41 +
+                       PCIP42 +
+                       PCIP43 +
+                       PCIP44 +
+                       PCIP45 +
+                       PCIP46 +
+                       PCIP47 +
+                       PCIP48 +
+                       PCIP49 +
+                       PCIP50 +
+                       PCIP51 +
+                       PCIP52 +
+                       PCIP54+
+                       UGDS +
+                       UGDS_WHITE +
+                       INEXPFTE +
+                       DEBT_MDN +
+                       FEMALE +
+                       AGE_ENTRY +
+                       FIRST_GEN +
+                       REGION +
+                       PPTUG_EF +
+                       TUITFTE + 
+                       LOAN_EVER +
+                       FAMINC +
+                       CONTROL +
+                       PELL_EVER +
+                       HIGHDEG, 
+                     data = df_final)
+summary(linear.model.1)
 ```
 
 ```{r}
