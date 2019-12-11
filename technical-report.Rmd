@@ -42,6 +42,10 @@ if(!require(ggrepel)){
     install.packages("ggrepel")
 }
 library(ggrepel)
+if(!require(glmnet)){
+    install.packages("glmnet")
+}
+library(glmnet)
 ```
 
 # Abstract
@@ -449,7 +453,7 @@ In order to impute our missing values using the `mice` package, we need to imput
 Below we impute the continuous variables. 
 
 ```{r Impute continuous variables, message=FALSE, cache=TRUE}
-numerics.mice <- mice(numerics, m=5, maxit = 50, method = 'pmm', seed = 500)
+numerics.mice <- mice(numerics.section, m=5, maxit = 30, method = 'pmm', seed = 500)
 
 numerics.mice.df1 <- complete(numerics.mice, 1)
 numerics.mice.df2 <- complete(numerics.mice, 2)
@@ -460,10 +464,10 @@ numerics.mice.df5 <- complete(numerics.mice, 5)
 
 ```{r Combine numerical imputed values into one dataset}
 # Create empty dataframe
-df_numerics.mice <- data.frame(matrix(NA, nrow = 2822, ncol = 75))
+df_numerics.mice <- data.frame(matrix(NA, nrow = 2634, ncol = 75))
 
 # Replace cells with the mean of the 5 imputed dataframes
-for (i in 1:2822) {
+for (i in 1:2634) {
   for (j in 1:75) {
     df_numerics.mice[i,j] = mean(numerics.mice.df1[i,j],
                                  numerics.mice.df2[i,j],
@@ -480,9 +484,9 @@ for (i in 1:75){
 ```
 
 ```{r Create final mice imputed dataset}
-df.final.mice <- cbind.data.frame(INSTNM = df_final$INSTNM,
+df.final.mice <- cbind.data.frame(INSTNM = df_final_section$INSTNM,
                                   df_numerics.mice,
-                                  categoricals)
+                                  categoricals[1:2634,])
 
 df.final.mice <- df.final.mice %>%
   mutate(INSTNM = as.character(INSTNM))
@@ -493,11 +497,14 @@ df.final.mice <- df.final.mice %>%
 Below, we use the `missForest` package to impute our missing data. Unlike the `mice` package, we can do this imputation in one step, which makes it much more simple. 
 
 ```{r Impute variables with missForest, cache=TRUE}
-missForest.imputation <- missForest(df_final)
+nonchars.section <- cbind(numerics.section,
+                          categoricals[1:2634,])
+missForest.imputation <- missForest(nonchars.section)
 ```
 
-```{r, cache=TRUE}
-missForest_df <- missForest.imputation$ximp
+```{r missForest dataframe, cache=TRUE}
+missForest_df <- cbind.data.frame(INSTNM = df_final_section$INSTNM,
+                                  missForest.imputation$ximp)
 ```
 
 ## Modeling
@@ -577,7 +584,7 @@ linear.model.1 <- lm(log_md_wage ~
                        UGDS +
                        UGDS_WHITE +
                        INEXPFTE +
-                       DEBT_MDN +
+                       logdebt +
                        FEMALE +
                        AGE_ENTRY +
                        FIRST_GEN +
@@ -589,7 +596,7 @@ linear.model.1 <- lm(log_md_wage ~
                        CONTROL +
                        PELL_EVER +
                        HIGHDEG, 
-                     data = df_final)
+                     data = df_final_section)
 summary(linear.model.1)
 
 #Run model diagnostics
@@ -610,42 +617,199 @@ plot(linear.model.1, 4)
 par(mfrow = c(2, 2))
 plot(linear.model.1)
 
-#Check for multicollinearity
-ols_vif_tol(linear.model.1)
-corr_matrix <- cor(linear.model.1, use = "complete.obs")
+# #Check for multicollinearity
+# ols_vif_tol(linear.model.1)
+# corr_matrix <- cor(linear.model.1, use = "complete.obs")
 ```
 
-```{r Linear model with imputation}
-kitchen.sink.imputed <- lm(MD_EARN_WNE_P6 ~ ., data = imputed_df)
-summary(kitchen.sink.imputed)
+```{r Linear model with mice imputation}
+linear.model.2 <- lm(log_md_wage ~ 
+                       PCIP01 +
+                       PCIP03 +
+                       PCIP04 +
+                       PCIP05 +
+                       PCIP09 +
+                       PCIP10 +
+                       PCIP11 +
+                       PCIP12 +
+                       PCIP13 + 
+                       PCIP14 +
+                       PCIP15 +
+                       PCIP16 +
+                       PCIP19 +
+                       PCIP22 +
+                       PCIP23 +
+                       PCIP24 +
+                       PCIP25 +
+                       PCIP26 +
+                       PCIP27 +
+                       PCIP29 +
+                       PCIP30 +
+                       PCIP31 + 
+                       PCIP38 +
+                       PCIP39 +
+                       PCIP40 +
+                       PCIP41 +
+                       PCIP42 +
+                       PCIP43 +
+                       PCIP44 +
+                       PCIP45 +
+                       PCIP46 +
+                       PCIP47 +
+                       PCIP48 +
+                       PCIP49 +
+                       PCIP50 +
+                       PCIP51 +
+                       PCIP52 +
+                       PCIP54+
+                       UGDS +
+                       UGDS_WHITE +
+                       INEXPFTE +
+                       logdebt +
+                       FEMALE +
+                       AGE_ENTRY +
+                       FIRST_GEN +
+                       REGION +
+                       PPTUG_EF +
+                       TUITFTE + 
+                       LOAN_EVER +
+                       FAMINC +
+                       CONTROL +
+                       PELL_EVER +
+                       HIGHDEG, 
+                     data = df.final.mice)
+summary(linear.model.2)
+
+#Run model diagnostics
+
+#Residual plot
+plot(linear.model.2, 1)
+
+#QQ [;pt
+plot(linear.model.2, 2)
+
+#Scale location plot
+plot(linear.model.2, 3)
+
+#Residual 2 
+plot(linear.model.2, 4)
+
+#Quartet
+par(mfrow = c(2, 2))
+plot(linear.model.2)
 ```
 
-### Lasso
-Since 
+```{r Linear model with missForest imputation}
+linear.model.3 <- lm(log_md_wage ~ 
+                       PCIP01 +
+                       PCIP03 +
+                       PCIP04 +
+                       PCIP05 +
+                       PCIP09 +
+                       PCIP10 +
+                       PCIP11 +
+                       PCIP12 +
+                       PCIP13 + 
+                       PCIP14 +
+                       PCIP15 +
+                       PCIP16 +
+                       PCIP19 +
+                       PCIP22 +
+                       PCIP23 +
+                       PCIP24 +
+                       PCIP25 +
+                       PCIP26 +
+                       PCIP27 +
+                       PCIP29 +
+                       PCIP30 +
+                       PCIP31 + 
+                       PCIP38 +
+                       PCIP39 +
+                       PCIP40 +
+                       PCIP41 +
+                       PCIP42 +
+                       PCIP43 +
+                       PCIP44 +
+                       PCIP45 +
+                       PCIP46 +
+                       PCIP47 +
+                       PCIP48 +
+                       PCIP49 +
+                       PCIP50 +
+                       PCIP51 +
+                       PCIP52 +
+                       PCIP54+
+                       UGDS +
+                       UGDS_WHITE +
+                       INEXPFTE +
+                       logdebt +
+                       FEMALE +
+                       AGE_ENTRY +
+                       FIRST_GEN +
+                       REGION +
+                       PPTUG_EF +
+                       TUITFTE + 
+                       LOAN_EVER +
+                       FAMINC +
+                       CONTROL +
+                       PELL_EVER +
+                       HIGHDEG, 
+                     data = missForest_df)
+summary(linear.model.3)
+
+#Run model diagnostics
+
+#Residual plot
+plot(linear.model.3, 1)
+
+#QQ [;pt
+plot(linear.model.3, 2)
+
+#Scale location plot
+plot(linear.model.3, 3)
+
+#Residual 2 
+plot(linear.model.3, 4)
+
+#Quartet
+par(mfrow = c(2, 2))
+plot(linear.model.3)
+```
+
+### Lasso models
+
+To supplement these linear regression models, we ran lasso models on each of these datasets to see if the variables which survived penalization are variables which conform to our theoretical expectations.  
+
+Note that when we do not impute any observations, we must use a subsection of the dataset to run a lasso model--only the observations without N/A values. 
+
 ```{r Lasso model without imputation}
-X <- model.matrix(MD_EARN_WNE_P6 ~ ., data = df_final)[, -77]
-Y <- df_final$MD_EARN_WNE_P6 
+# Data setup
+lasso.data <- cbind(numerics.section,
+                    categoricals[1:2634,])
+lasso.data <- lasso.data %>%
+  select(-MD_EARN_WNE_P6)
+lasso.data.nona <- drop_na(lasso.data)
+X <- model.matrix(log_md_wage ~ ., data = lasso.data.nona)[, -1]
+Y <- lasso.data.nona$log_md_wage 
 grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
 
-lasso.1 <- glmnet(x = X, y = Y, alpha = 1,
-lambda = grid, standardize = TRUE)
-
+# Cross validation to find optimal penalty term
 set.seed(1)
 cv.out1 = cv.glmnet(X, Y, alpha = 1)
 bestlam1 = cv.out1$lambda.min
-bestlam1
 
-#Rebuild with best lambda
-lasso_best1 <- glmnet(x = X, y = Y, alpha = 1, lambda = best_lam1)
+#Run lasso and get non-zero coefficients of most important variables
+lasso.1 = glmnet(x = X, y = Y, alpha = 1, lambda = grid)
+lasso.coef = predict(lasso.1, type = "coefficients", s = bestlam1)[1:nrow(coef(lasso.1)),]
+nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
+length(nonzero.lasso.coef)
 
-#Get coefficients of most important variables
-coef(lasso_best1)
 #Get training MSE for LASSO
-lasso.pred = predict(lasso.best1, s = bestlam1, X)
+lasso.pred = predict(lasso.1, s = bestlam1, X)
 MSE_lasso1 = mean ((lasso.pred - Y)^2)
 MSE_lasso1
-
 ```
+
 
 
 ```{r Lasso model with imputation}
