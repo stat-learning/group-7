@@ -535,7 +535,7 @@ To capture **student demographics**, we use the following variables from our dat
 Since we essentially have three datasets with these variables, it's an interesting exercise to see how the results of our analysis might differ with and without imputation. To start, we'll run a linear model of the above specification on the dataset without any imputation. 
 
 ```{r Linear model without imputation}
-linear.model.1 <- lm(MD_EARN_WNE_P6 ~ 
+linear.model.1 <- lm(log_md_wage ~ 
                        PCIP01 +
                        PCIP03 +
                        PCIP04 +
@@ -682,7 +682,7 @@ df_forest <- df_final %>%
   select(-INSTNM)
 
 set.seed(1)
-rf.college = randomForest(MD_EARN_WNE_P6  ~., data = df_forest, na.action = na.roughfix, importance = TRUE)
+rf.college = randomForest(log_md_wage  ~., data = df_forest, na.action = na.roughfix, importance = TRUE)
 importance(rf.college)
 varImpPlot(rf.college, cex = 0.6)
 ```
