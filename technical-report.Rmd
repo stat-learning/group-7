@@ -608,6 +608,12 @@ par(mfrow = c(2, 2))
 plot(linear.model.1)
 ```
 
+#### Results
+
+  This model had a lot of unsurprising results, such as the importance of degrees in typically high/low-paying careers, but also had some surprises. The variable for expenditure per student, for example, was not significant, and neither was family income. It seems that controlling for other aspects of colleges is enough to render it insignificant.There were only two significant regions, neither of which are New England. 
+
+  As our diagnostic plots show, the model is quite robust in terms of linearity, normality, and homoskedasticity, although the tails of the distribution are a bit fatter than normal. 
+
 ### With imputation using `mice`
 
 ```{r Linear model with mice imputation, cache=TRUE}
@@ -738,6 +744,10 @@ par(mfrow = c(2, 2))
 plot(linear.model.3)
 ```
 
+### Imputation Results
+
+  The results after imputation do not differ radically from the non-imputed results. There are a few changes in the significance of different shares of majors, as well as a few changes in the significance of other variables, but the models are conceptually quite consistent. However, an interesting note is that the $R^2$ is lower for the imputed models, despite having more cases.
+  
 ## Lasso models
 
 To supplement these linear regression models, we ran lasso models on each of these datasets to see if the variables which survived penalization are variables which conform to our theoretical expectations.  
@@ -769,7 +779,10 @@ nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
 length(nonzero.lasso.coef)
 ```
 
-Here, the lasso regression resulted in 30 non-zero coefficients. We'll talk more about this later. 
+#### Results
+
+	The lasso model included many degree variables, some of which were not surprising in that they reflected high-paying and low-paying fields, but what was interesting was that Legal degrees had a negative effect. This makes sense, however, when we consider that this data is filtered for 4 year degree colleges, and thus legal studies are all pre-law, and so these students probably have some more education to go before they start earning a lot of money. The lasso model also chose interesting demographic variables-- where we chose the share of white students as we beleived white vs. non-white to probablly be the most important distinction in student demographics, but the lasso chose Asian, biracial, and unknown racial shares. 
+
 
 ### Mice imputation
 
@@ -794,6 +807,10 @@ nonzero.lasso.mice.coef <- lasso.coef.mice[lasso.coef.mice != 0]
 length(nonzero.lasso.mice.coef)
 ```
 
+#### Results 
+
+Some interesting differences in this model is the inclusion of more racial demographics, expenditure pers student, as well as CONTROL2, the dummy variable for private nonprofit colleges. This model eliminated the highest degree variable as well.
+
 ### missForest imputation
 
 ```{r Lasso model with missForest imputation, cache=TRUE}
@@ -817,6 +834,10 @@ nonzero.lasso.missForest.coef <- lasso.coef.missForest[lasso.coef.missForest != 
 length(nonzero.lasso.missForest.coef)
 ```
 
+#### Results
+
+	This imputed lasso is similar to the previous one, but it also included average family income, and didn’t eliminate the graduate school dummy variable. 
+	
 ## Random forest models
 
 In order to get a sense of what variables are deemed most important by a more data-oriented approach, we decided to run a random forest on our data set and measure variable importance.
@@ -893,6 +914,15 @@ ggplot() +
 There appears to be no relationship between the position of a school on the PC biplot and its residual value, which is a very good sign for the validity of our model. 
 
 # Discussion
+
+Both (1) the demographic makeup of a school’s student body and (2) a school’s institutional characteristics play a major role in determining the future wages of graduates. While the most significant variables varied between models and datasets, across all specifications, the share of the student body receiving a degree in a given major was highly associated with both lower and higher incomes, depending on major. This makes a lot of intuitive sense; we think that a computer programmer will, on average, make more than an english teacher. The cases in this data set are not students, however, but colleges. It is possible also, then, that colleges with certain kinds of degree ratios are better at ensuring higher earnings for their students, but the nature of degrees awarded themselves most likely have an effect on future earnings as well. Both these effects probably have an impact on our results. 
+Racial and class demographics also consistently showed up in all of our models as significant. In one way or another, all our models considered both the racial and socio-economic composition of schools as very relevant in relation to future wages. 
+An interesting note is that the results of racial variables are counterintuitive—it seems that an increase in the share of white students results in lower wages overall. However, because the cases are schools and not individuals in this data set, this result could make sense. Diversity could impact wages in several positive ways, including increasing the prestige of a school and the practical aspect of a diverse student body making for a better learning environment.
+These results are consistent with our expectations, as well as our data analysis. Our PCA revealed that most of the variation between schools in this data set is due to privilege of the students first and then nature of the school itself, and so that this kind of relationship holds with wages as a dependent variable is not too surprising. 
+This project does have many weaknesses, however. Many of the variables that we wanted to use, such as average standardized test scores, were unusable due to missing data. There is also much information that our data did not capture, and, realistically, can never truly be captured in one dataset and compared between different schools. Arguably, there is much more to Reed College than the amalgamation of the roughly 80 variables that we used in this project, or even the 2000 variables in our starting data set. Capturing and comparing every important characteristic of a college in such a quantitative way is probably impossible. 
+Our models most likely have a decent amount of internal validity, but they definitely do not have much external validity. The financial and cultural aspects of education beyond the United States would cause our models to give inaccurate results-- even our variables accounting for region capture this reality within the United States itself. 
+Our results imply that college by itself is not enough to solve the issue of a lack of social mobility in the United States. Colleges do not eliminate the previous characteristics of its student body. However, since we do not have data on earnings of non-college institutions, it’s hard to say what effect college education has on the importance of demographics such as race and gender when compared to the alternative. 
+Further topics that could be investigated include investigating other years, datasets, and countries, as well as in-state comparisons in order to get a more homogeneous community of schools. Another kind of analysis that could be done is a more micro-focused project concerning the future wages of individual students within a school, rather than a macro focus on just the characteristics and demographics of schools, which could fail to capture the variation within them. Our analysis could also try to extend to other educational institutions, such as high schools. 
 
 # Sources
 
