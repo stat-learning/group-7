@@ -46,6 +46,10 @@ if(!require(glmnet)){
     install.packages("glmnet")
 }
 library(glmnet)
+if(!require(modelr)){
+    install.packages("modelr")
+}
+library(modelr)
 ```
 
 # Abstract
@@ -507,11 +511,11 @@ missForest_df <- cbind.data.frame(INSTNM = df_final_section$INSTNM,
                                   missForest.imputation$ximp)
 ```
 
-## Modeling
+# Modeling
 
 With our data now in workable format, with two different ways of imputing missingness, we now turn to modeling our data. 
 
-### Linear models
+## Linear models
 
 Following the literature cited in our introduction, we built a theoretical model on what might impact graduates' earnings. This model is described with the equation below.
 
@@ -537,7 +541,7 @@ To capture **student demographics**, we use the following variables from our dat
 - share of students who have received a loan (`LOAN_EVER`)
 - share of students who have received a Pell Grant (`PELL_EVER`)
 
-#### Without imputation
+### Without imputation
 
 Since we essentially have three datasets with these variables, it's an interesting exercise to see how the results of our analysis might differ with and without imputation. To start, we'll run a linear model of the above specification on the dataset without any imputation. 
 
@@ -604,6 +608,8 @@ par(mfrow = c(2, 2))
 plot(linear.model.1)
 ```
 
+### With imputation using `mice`
+
 ```{r Linear model with mice imputation, cache=TRUE}
 linear.model.2 <- lm(log_md_wage ~ 
                        PCIP01 +
@@ -666,6 +672,8 @@ summary(linear.model.2)
 par(mfrow = c(2, 2))
 plot(linear.model.2)
 ```
+
+### With imputation using `missForest`
 
 ```{r Linear model with missForest imputation, cache=TRUE}
 linear.model.3 <- lm(log_md_wage ~ 
@@ -730,13 +738,13 @@ par(mfrow = c(2, 2))
 plot(linear.model.3)
 ```
 
-### Lasso models
+## Lasso models
 
 To supplement these linear regression models, we ran lasso models on each of these datasets to see if the variables which survived penalization are variables which conform to our theoretical expectations.  
 
 Note that when we do not impute any observations, we must use a subsection of the dataset to run a lasso model--only the observations without N/A values. 
 
-#### Without imputation
+### Without imputation
 
 ```{r Lasso model without imputation, cache=TRUE}
 # Data setup
@@ -763,7 +771,7 @@ length(nonzero.lasso.coef)
 
 Here, the lasso regression resulted in 30 non-zero coefficients. We'll talk more about this later. 
 
-#### Mice imputation
+### Mice imputation
 
 ```{r Lasso model with mice imputation, cache=TRUE}
 # Data setup
@@ -786,7 +794,7 @@ nonzero.lasso.mice.coef <- lasso.coef.mice[lasso.coef.mice != 0]
 length(nonzero.lasso.mice.coef)
 ```
 
-#### missForest imputation
+### missForest imputation
 
 ```{r Lasso model with missForest imputation, cache=TRUE}
 # Data setup
@@ -809,7 +817,7 @@ nonzero.lasso.missForest.coef <- lasso.coef.missForest[lasso.coef.missForest != 
 length(nonzero.lasso.missForest.coef)
 ```
 
-### Random forest modeling
+## Random forest models
 
 In order to get a sense of what variables are deemed most important by a more data-oriented approach, we decided to run a random forest on our data set and measure variable importance.
 
@@ -844,8 +852,48 @@ varImpPlot(rf.college.missForest, cex = 0.6)
 print(rf.college.missForest)
 ```
 
-### Discussion
+## Analysis of the residuals
 
-### Sources
+We've done a lot of modeling. However, there's one interesting approach left to take: an analysis of the residuals. What does it mean for a college to have bigger or smaller residuals? If a college's predicted median wage is significantly less than its actual, this college could be thought of as "outperforming" its statistics; similarly, if a college's predicted value is significantly higher, the college is underperforming. 
+
+We use the first linear model to find the residuals for each college, and pull out the top 6 "overperformers" and top 6 "underperformers." We also pull out Reed's values for curiosity's sake. 
+
+```{r Find residuals, message = FALSE, warning= FALSE}
+
+residuals <- tibble(INSTNM = df_final_section_nona$INSTNM,
+                    residual = df_final_section_nona$log_md_wage - 
+                      predict.lm(linear.model.1, df_final_section_nona))
+
+ordered.residuals <- residuals[order(residuals$residual),]
+
+head(ordered.residuals)
+tail(ordered.residuals)
+```
+
+Samuel Merritt University seems to be particularly bad in its performance relative to predicted wages. 
+
+Where does Reed stand in this? 
+
+```{r Reed residual}
+ordered.residuals[ordered.residuals$INSTNM == "Reed College",]
+```
+
+Reed under-performs the model's prediction, but not nearly as dramatically as the worst under-performers. 
+
+One last potentially interesting thing to do would be to see whether the residuals of our model depend on the specific school's location in the PC1 v PC2 biplot. We've updated our biplot below, where the colors are equivalent to the residual value. 
+
+```{r Biplot update with residuals}
+pcs$residuals <- residuals$residual
+  
+ggplot() + 
+  geom_point(data = pcs, aes(x = PC1, y = PC2, color = residuals)) +
+  theme_minimal()
+```
+
+There appears to be no relationship between the position of a school on the PC biplot and its residual value, which is a very good sign for the validity of our model. 
+
+# Discussion
+
+# Sources
 
 
