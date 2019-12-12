@@ -1,8 +1,8 @@
 # College characteristics and post-graduate employment
 
-## Group members
+Welcome to our final project for Math 243, Fall 2019. 
 
-Alice Chang, Ben Thomas, and Olek Wojcik
+## Alice Chang, Ben Thomas, and Olek Wojcik
 
 ## Project description
 
