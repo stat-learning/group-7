@@ -58,15 +58,39 @@ In this project, we aim to determine which factors have the strongest influence 
 
 # Introduction
 
-In the past decade, concern with analyzing and publicizing the employment outcomes of higher educational institutions and career training programs has become increasingly widespread. The release of the College Scorecard dataset by the Obama Administration in 2013 facilitated greater attention to the capacity of incoming undergraduate students to negotiate both the economic cost and prospective pay-off of higher education. In a public announcement, the U.S. Department of Education expressed their concern with enabling students tp make informed and economically sound college decisions, citing the Obama Administration’s commitment to providing “hardworking” students  “a real opportunity to earn an affordable, high quality degree or credential that offers a clear path to economic security and success.” 
+## Background
+In the past decade, concern with publicizing the employment outcomes of higher educational institutions and career training programs has become increasingly widespread. The release of the College Scorecard dataset by the Obama Administration in 2013 facilitated greater attention to the capacity of incoming undergraduate students to negotiate both the economic cost and prospective pay-off of higher education. In a public announcement, the U.S. Department of Education expressed their concern with enabling students to make informed and economically sound college decisions, citing the Obama Administration’s commitment to providing students  “a real opportunity to earn an affordable, high quality degree or credential that offers a clear path to economic security and success.”
+
+Other efforts to collect college earnings data for similar purposes have been constrained by multiple factors. PayScale is a site that discloses the self-reported earnings of students by degree and institution, subsequently relying on data that is biased by voluntary reporting. Certain states, such as Texas and North Carolina, have used in-state unemployment insurance records and graduate records to produce tabulations of graduate earnings data. However, these tabulations only include in-state students and do not include more mobile students that may receive higher earnings. Recognizing the limitations of previous datasets, the Longitudinal Employer-Household Dynamics (LEHD) program collaborated with universities, the U.S. Census Bureau, and state agencies to launch an experimental research project in early 2018. Using institutional transcript data and a national database of jobs, the program released tabulations of post-graduation earnings by the degree, the partner institution, and the field of students. However, the dataset currently represents only a small number of colleges. 
+
+As discussed later on below, we confronted our own challenges in our analysis of  the College Scorecard dataset. While we optimized the usability of our dataset, the accessibility of college earnings data and institutional features still slightly limited our ability to engage with our theoretical research question holistically. 
+
+
+## Research Question
+
+We were similarly interested in identifying the factors that are important to determining the income of graduates from a given college several years after graduation. While the interconnection between educational and income inequality is clear, how can we better understand this mutual impact? While research has shown that receiving a college education enhances economic mobility, what are the characteristics of individual institutions that might further enhance or diminish student income post-graduation? Moreover, to what extent does facilitating equal opportunity, and the accessibility of higher education, actually address socioeconomic inequality? In short, to what extent do colleges promote social mobility, and how can we understand the role of prestige and privilege? 
 
 ## Theories of Inequality
 
-Scholars examining the politics of social inequality have 
+Scholars examining the politics of social and economic inequality advance multiple theoretical 
+frameworks. In social mobility research, sociologists examine the relationship between the inequality of opportunity and social mobility. Consequently, certain scholars question the myth of meritocracy and the capacity of equal opportunity and social mobility to serve as sustainable solutions to social and economic stratification. As such, these scholars seek instead to integrate the consideration of unequal wealth and material conditions.
 
-Equality of opportunity v. condition
+Exploring the relationship between social origins and social mobility, and income equality, sociologists Richard Breen and Jan Jonsson accentuate the persistent significance of parental socioeconomic circumstances in shaping the outcome of the latter. Promoting “prosperity” over “upward mobility,” Neil Gilbert, a Professor of Social welfare and Social Service, argues that increases in income equality do not necessarily address the problem of social and economic inequality in the United States. Acknowledging that a college education is positively correlated with higher income, Gilbert promotes the recognition of “relative mobility.” As such, he argues that the increase in income enabled by higher education does not necessarily correspond to the equal distribution of income between graduates of similar fields and institutions. 
+
+While professors of economics Eric Eide and Michael Hilmer argue that the prestige of an institution increases the earnings of graduates, they accentuate how the field that graduates choose ultimately plays a much more significant role in accounting for the variation in earnings post-graduation. In accordance with these scholars, we were interested in discovering the extent that social origins and factors beyond institutional prestige and educational attainment itself shape earnings.
 
 # Data
+
+
+The U.S. Department of Education released the first College Scorecard dataset in 2013 in an effort to facilitate the transparency of institutional outcomes and features. The dataset is collected through the consolidation of federal reports from institutions as well as financial federal aid and IRS tax records. Redesigned in 2015, the data includes extensive information on the average earnings, debt, and employment outcomes of student cohorts up to ten years after graduation, encompassing institutional demographics from the 1997-1997 to 2017-2018 academic year. 
+
+In our project, we chose to focalize the dataset that was released at the 2014-2015 academic year. This dataset provides the most recent and complete information. Before cleaning, the 2014-2015 dataset contained 1,977 variables and 7,703 observations, and each observation represents one participating institution. Institutions included both degree and non-degree graduating institutions. 
+To address our question, we selected the median earnings of students size years after graduation as our response variable. In considering the extent of possible outliers, we chose to utilize median earnings over the mean, and we logged the response variable to account for the skew. 
+
+As discussed further below, the large extent of missingness in our data limited the usability of all of our variables. During our initial exploration,  narrowed down our dataset to include only four year institutions and dropped about one hundred of the variables that were either protected for privacy or did not contain any information. A majority of our variables contained metrics that measured similar institutional aspects. Consequently, as such, drawing from our theoretical approach we further reduced our dataset by eliminating redundant variables and variables that were apparently irrelevant to our question. 
+
+However, we recognized the potentially  consequential impact of the extent of our data’s missingness on our capacity to draw informed inferences. As such, discussed further below, we also ran multiple imputation on the initial large dataset, and implemented all of our models on the imputed dataset as well. We compared those results to the results of the models that were implemented on the dataset including missingness.  Recognizing the likeliness that missingness of our dataset is not at random however, our capacity to make definitive statements from our models after imputation is still limited. 
+
 
 ## Download and clean
 
