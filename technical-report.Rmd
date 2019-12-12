@@ -877,6 +877,11 @@ varImpPlot(rf.college, cex = 0.6)
 print(rf.college)
 ```
 
+### Results
+
+The random forest reflects a different measure of variable importance than our linear models or even our lasso. Here, the is less of an emphasis on causation, and more on prediction. The most important variables here are the best ones to use to predict the wages of students from a particular school, so they are still useful in the sense that they reflect which variables capture a lot of the variation by themselves. For example, family income is something that we believed to be important, and yet was not significant in most of our models so far. Here, however, it is one of the more important variables. The other top variables include the share of Visual and Performing Arts degrees, the share of Health Professions degrees, statistics surrounding Pell grants, region, and share of Asian students. 
+
+
 ```{r Random Forest mice, cache=TRUE}
 df.forest.mice <- df.final.mice %>%
   select(-INSTNM, -MD_EARN_WNE_P6)
@@ -896,6 +901,10 @@ rf.college.missForest = randomForest(log_md_wage  ~., data = missForest_df_fores
 varImpPlot(rf.college.missForest, cex = 0.6)
 print(rf.college.missForest)
 ```
+
+### Imputation Results
+
+The imputed random forests are slightly different, but there are not any radical changes. An interesting note is that the variance explained by the forests did decrease after the imputation.
 
 ## Analysis of the residuals
 
@@ -939,6 +948,9 @@ There appears to be no relationship between the position of a school on the PC b
 
 # Discussion
 
+Note on Imputation: The R squared of the models with imputed data are lower, which is counterintuitive, because imputation should increase the number of cases, and thus the certainty of our model. Additionally, the QQ plots reveal fatter tails in the imputed model distribution. A potential explanation for these changes could be that schools with missing data could tend to be more non-traditional than other schools, as they already are outliers in the sense that their data is missing. These schools could possibly not fit as neatly in with the schools we currently have, lowering the R squared. 
+
+
 Both (1) the demographic makeup of a school’s student body and (2) a school’s institutional characteristics play a major role in determining the future wages of graduates. While the most significant variables varied between models and datasets, across all specifications, the share of the student body receiving a degree in a given major was highly associated with both lower and higher incomes, depending on major. This makes a lot of intuitive sense; we think that a computer programmer will, on average, make more than an english teacher. The cases in this data set are not students, however, but colleges. It is possible also, then, that colleges with certain kinds of degree ratios are better at ensuring higher earnings for their students, but the nature of degrees awarded themselves most likely have an effect on future earnings as well. Both these effects probably have an impact on our results. 
 Racial and class demographics also consistently showed up in all of our models as significant. In one way or another, all our models considered both the racial and socio-economic composition of schools as very relevant in relation to future wages. 
 An interesting note is that the results of racial variables are counterintuitive—it seems that an increase in the share of white students results in lower wages overall. However, because the cases are schools and not individuals in this data set, this result could make sense. Diversity could impact wages in several positive ways, including increasing the prestige of a school and the practical aspect of a diverse student body making for a better learning environment.
@@ -949,5 +961,33 @@ Our results imply that college by itself is not enough to solve the issue of a l
 Further topics that could be investigated include investigating other years, datasets, and countries, as well as in-state comparisons in order to get a more homogeneous community of schools. Another kind of analysis that could be done is a more micro-focused project concerning the future wages of individual students within a school, rather than a macro focus on just the characteristics and demographics of schools, which could fail to capture the variation within them. Our analysis could also try to extend to other educational institutions, such as high schools. 
 
 # Sources
+
+The American Economic Review 79, no. 2 (1989): 247–52.Oehrlein, Paul. “Determining the Future Income of College Students,” n.d., 34
+
+Bradford, Stuart. "Do Elite Colleges Lead to Higher Salaries? Only for Some Professions" The Wall Street Journal, January 2016.https://www.wsj.com/articles/do-elite-colleges-lead-to-higher-salaries-only-for-some-professions-1454295674
+
+Breen, R., and Jonsson, J. O. (2005), “Inequality of Opportunity in Comparative Perspective: Recent Research on Educational Attainment and Social Mobility,” Annual Review of Sociology, 31, 223–243. https://doi.org/10.1146/annurev.soc.31.041304.122232.
+
+Breiman, L. (2001), “Statistical Modeling: The Two Cultures (with comments and a rejoinder by the author),” Statistical Science, 16, 199–231. https://doi.org/10.1214/ss/1009213726.
+
+Brewer, Dominic J, Eric Eide, and Ronald G Ehrenberg. “Does It Pay To Attend An Elite Private College? Cross Cohort Evidence on the Effects of College Quality on Earnings.” Working Paper. 
+
+CEW Georgetown. “The Economic Value of College Majors,” May 7, 2015. https://cew.georgetown.edu/cew-reports/valueofcollegemajors/.
+
+“Do Elite Colleges Lead to Higher Salaries? Only for Some Professions - WSJ” (n.d.). Available athttps://www.wsj.com/articles/do-elite-colleges-lead-to-higher-salaries-only-for-some-professions-1454295674.
+
+“Fact Sheet: Obama Administration Announces Release of New Scorecard Data | U.S. Department of Education” (n.d.). Available athttps://www.ed.gov/news/press-releases/fact-sheet-obama-administration-announces-release-new-scorecard-data.
+
+Kelly, A. P. (2001), “Does College Really Improve Social Mobility?,” Brookings.
+
+McCann, C. (2019), “Technical Documentation: College Scorecard Institution-Level Data,” 46.
+
+National Bureau of Economic Research, June 1996. https://doi.org/10.3386/w5613.James, Estelle, Nabeel Alsalam, Joseph C. Conaty, and Duc-Le To. “College Quality and Future Earnings: Where Should You Send Your Child to College?”
+
+“Prosperity, Not Upward Mobility, Is What Matters - The Atlantic” (n.d.). Available athttps://www.theatlantic.com/business/archive/2017/01/prosperity-upward-mobility/511925/.
+
+US Census Bureau Center for Economic Studies (n.d.). “Post-Secondary Employment Outcomes (PSEO),” Available athttps://lehd.ces.census.gov/data/pseo_experimental.html.
+
+“Which Traits Predict Graduates’ Earnings?” The Economist, June 15, 2018. https://www.economist.com/graphic-detail/2018/06/15/which-traits-predict-graduates-earnings.
 
 
