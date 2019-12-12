@@ -272,7 +272,7 @@ the code itself takes around 40 Mb.)
 
     missmap(college.data)
 
-![](Missingness.png)
+![](technical-report_files/figure-markdown_strict/Missingness.png)
 
 Fortunately for us, after all of our data cleaning, this picture looks
 much better. In our final dataset (`df_final`), 93% of observations are
