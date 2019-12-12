@@ -6,7 +6,7 @@ author:
 - "Olek Wojcik"
 date: "12/11/2019"
 output:
-  md_document:
+  pdf_document:
     toc: true
 ---
 
