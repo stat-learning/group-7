@@ -123,7 +123,7 @@ mobility to serve as sustainable solutions to social and economic
 stratification. As such, these scholars seek instead to integrate the
 consideration of unequal wealth and material conditions.
 
-Exploring the relationship between social origins and social mobility,
+Exploring the relationship between social origins and social mobility
 and income equality, sociologists Richard Breen and Jan Jonsson
 accentuate the persistent significance of parental socioeconomic
 circumstances in shaping the outcome of the latter. Promoting
@@ -164,7 +164,7 @@ complete information. Before cleaning, the 2014-2015 dataset contained
 1,977 variables and 7,703 observations, and each observation represents
 one participating institution. Institutions included both degree and
 non-degree graduating institutions. To address our question, we selected
-the median earnings of students size years after graduation as our
+the median earnings of students six years after graduation as our
 response variable. In considering the extent of possible outliers, we
 chose to utilize median earnings over the mean, and we logged the
 response variable to account for the skew.
@@ -191,25 +191,10 @@ is not at random however, our capacity to make definitive statements
 from our models after imputation is still limited.
 
 Two cultures
-------------
+------------------
 
-Given the uniqueness of our dataset’s missingness and included metrics
-motivated us to consider the construction of models that were not
-entirely guided by our initial theoretical assumptions. Considering the
-amount of variables that we identified as “redundant,” would an
-algorithmic be better suited to select representative and important
-variables? Consequently we were interested in comparing the feature
-selection that we did on our own in OLS regression with the feature
-selection resulting from the lasso and random forest model. Drawing from
-Breiman, our implementation of both algorithmic and data modeling shaped
-both the different datasets and “important” variables that we identified
-in each model. We selected the variables in our OLS regression model out
-of the dataset that we created in our initial selection of relevant
-variables. In doing so, we focalized features of individual institutions
-and student populations, including prevalent majors and racial, gender,
-and socioeconomic demographics. However, the nature of our lasso
-regression and random forest model required us to drop any variables
-with missingness from our dataset.
+The uniqueness of our dataset’s missingness and included metrics motivated us to consider the construction of models that were not entirely guided by our initial theoretical assumptions. Considering the amount of variables that we identified as “redundant,” would an algorithmic be better suited to select representative and important variables? Consequently we were interested in comparing the feature selection that we did on our own in OLS regression with the feature selection resulting from the lasso and random forest model. Drawing from Breiman, our implementation of both algorithmic and data modeling shaped both the different datasets and “important” variables that we identified in each model. We selected the variables in our OLS regression model out of the dataset that we created in our initial selection of relevant variables. In doing so, we focalized features of individual institutions and student populations, including prevalent majors and racial, gender, and socioeconomic demographics. However, the nature of our lasso regression and random forest model required us to drop any variables with missingness from our dataset. 
+
 
 Download and clean
 ------------------
