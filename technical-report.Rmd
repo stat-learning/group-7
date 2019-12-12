@@ -480,7 +480,7 @@ In order to impute our missing values using the `mice` package, we need to imput
 
 Below we impute the continuous variables. 
 
-```{r Impute continuous variables, message=FALSE, cache=TRUE}
+```{r Impute continuous variables, message=FALSE, cache=TRUE, results = "hide"}
 numerics.mice <- mice(numerics.section, m=5, maxit = 30, method = 'pmm', seed = 500)
 
 numerics.mice.df1 <- complete(numerics.mice, 1)
@@ -546,23 +546,39 @@ Following the literature cited in our introduction, we built a theoretical model
 $$median \space earnings = \alpha + \beta_1 college \space characteristics + \beta_2 student \space demographics + \epsilon$$
 
 To capture **college characteristics**, we use the following variables:
+
 - percentage of degrees awarded in many different majors (`PCIP01`, `PCIP02`, etc.)
+
 - size of the school (`UGDS`)
+
 - instructional expenditures per student (`INEXPFTE`)
+
 - region of the school (`REGION`)
+
 - share of students that are part-time (`PPTUG_EF`)
+
 - tuition revenue per student (`TUITFTE`)
+
 - ownership of school (`CONTROL`)
+
 - highest degree awarded (`HIGHDEG`)
 
 To capture **student demographics**, we use the following variables from our dataset:
+
 - racial makeup of the school (`UGDS_WHITE`)
+
 - debt after graduation (`DEBT_MDN`)
+
 - gender makeup of school (`FEMALE`)
+
 - age makeup of school (`AGE_ENTRY`)
+
 - share of students that are first-generation (`FIRST_GEN`)
+
 - median family income (`FAMINC`)
+
 - share of students who have received a loan (`LOAN_EVER`)
+
 - share of students who have received a Pell Grant (`PELL_EVER`)
 
 ### Without imputation
@@ -634,9 +650,9 @@ plot(linear.model.1)
 
 #### Results
 
-  This model had a lot of unsurprising results, such as the importance of degrees in typically high/low-paying careers, but also had some surprises. The variable for expenditure per student, for example, was not significant, and neither was family income. It seems that controlling for other aspects of colleges is enough to render it insignificant.There were only two significant regions, neither of which are New England. 
+This model had a lot of unsurprising results, such as the importance of degrees in typically high/low-paying careers, but also had some surprises. The variable for expenditure per student, for example, was not significant, and neither was family income. It seems that controlling for other aspects of colleges is enough to render it insignificant.There were only two significant regions, neither of which are New England. 
 
-  As our diagnostic plots show, the model is quite robust in terms of linearity, normality, and homoskedasticity, although the tails of the distribution are a bit fatter than normal. 
+As our diagnostic plots show, the model is quite robust in terms of linearity, normality, and homoskedasticity, although the tails of the distribution are a bit fatter than normal. 
 
 ### With imputation using `mice`
 
@@ -770,7 +786,7 @@ plot(linear.model.3)
 
 ### Imputation Results
 
-  The results after imputation do not differ radically from the non-imputed results. There are a few changes in the significance of different shares of majors, as well as a few changes in the significance of other variables, but the models are conceptually quite consistent. However, an interesting note is that the $R^2$ is lower for the imputed models, despite having more cases.
+The results after imputation do not differ radically from the non-imputed results. There are a few changes in the significance of different shares of majors, as well as a few changes in the significance of other variables, but the models are conceptually quite consistent. However, an interesting note is that the R^2 is lower for the imputed models, despite having more cases.
   
 ## Lasso models
 
@@ -800,12 +816,12 @@ bestlam1 = cv.out1$lambda.min
 lasso.1 = glmnet(x = X, y = Y, alpha = 1, lambda = grid)
 lasso.coef = predict(lasso.1, type = "coefficients", s = bestlam1)[1:nrow(coef(lasso.1)),]
 nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
-length(nonzero.lasso.coef)
+nonzero.lasso.coef
 ```
 
 #### Results
 
-	The lasso model included many degree variables, some of which were not surprising in that they reflected high-paying and low-paying fields, but what was interesting was that Legal degrees had a negative effect. This makes sense, however, when we consider that this data is filtered for 4 year degree colleges, and thus legal studies are all pre-law, and so these students probably have some more education to go before they start earning a lot of money. The lasso model also chose interesting demographic variables-- where we chose the share of white students as we beleived white vs. non-white to probablly be the most important distinction in student demographics, but the lasso chose Asian, biracial, and unknown racial shares. 
+The lasso model included many degree variables, some of which were not surprising in that they reflected high-paying and low-paying fields, but what was interesting was that Legal degrees had a negative effect. This makes sense, however, when we consider that this data is filtered for 4 year degree colleges, and thus legal studies are all pre-law, and so these students probably have some more education to go before they start earning a lot of money. The lasso model also chose interesting demographic variables-- where we chose the share of white students as we beleived white vs. non-white to probablly be the most important distinction in student demographics, but the lasso chose Asian, biracial, and unknown racial shares. 
 
 ### Mice imputation
 
@@ -827,7 +843,7 @@ bestlam.mice = cv.out.mice$lambda.min
 lasso.2 = glmnet(x = Xmice, y = Ymice, alpha = 1, lambda = grid)
 lasso.coef.mice = predict(lasso.2, type = "coefficients", s = bestlam.mice)[1:nrow(coef(lasso.2)),]
 nonzero.lasso.mice.coef <- lasso.coef.mice[lasso.coef.mice != 0]
-length(nonzero.lasso.mice.coef)
+nonzero.lasso.mice.coef
 ```
 
 #### Results 
@@ -854,12 +870,12 @@ bestlam.missForest = cv.out.missForest$lambda.min
 lasso.3 = glmnet(x = XmissForest, y = YmissForest, alpha = 1, lambda = grid)
 lasso.coef.missForest = predict(lasso.3, type = "coefficients", s = bestlam.missForest)[1:nrow(coef(lasso.3)),]
 nonzero.lasso.missForest.coef <- lasso.coef.missForest[lasso.coef.missForest != 0]
-length(nonzero.lasso.missForest.coef)
+nonzero.lasso.missForest.coef
 ```
 
 #### Results
 
-	This imputed lasso is similar to the previous one, but it also included average family income, and didn’t eliminate the graduate school dummy variable. 
+This imputed lasso is similar to the previous one, but it also included average family income, and didn’t eliminate the graduate school dummy variable. 
 	
 ## Random forest models
 
