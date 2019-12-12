@@ -4,6 +4,7 @@
     -   [Research question](#research-question)
     -   [Theories of inequality](#theories-of-inequality)
 -   [Data](#data)
+    -   [Two cultures](#two-cultures)
     -   [Download and clean](#download-and-clean)
     -   [Exploratory data analysis](#exploratory-data-analysis)
         -   [Response variable](#response-variable)
@@ -193,6 +194,27 @@ Two cultures
 ------------------
 
 The uniqueness of our dataset’s missingness and included metrics motivated us to consider the construction of models that were not entirely guided by our initial theoretical assumptions. Considering the amount of variables that we identified as “redundant,” would an algorithmic be better suited to select representative and important variables? Consequently we were interested in comparing the feature selection that we did on our own in OLS regression with the feature selection resulting from the lasso and random forest model. Drawing from Breiman, our implementation of both algorithmic and data modeling shaped both the different datasets and “important” variables that we identified in each model. We selected the variables in our OLS regression model out of the dataset that we created in our initial selection of relevant variables. In doing so, we focalized features of individual institutions and student populations, including prevalent majors and racial, gender, and socioeconomic demographics. However, the nature of our lasso regression and random forest model required us to drop any variables with missingness from our dataset. 
+=======
+------------
+
+Given the uniqueness of our dataset’s missingness and included metrics
+motivated us to consider the construction of models that were not
+entirely guided by our initial theoretical assumptions. Considering the
+amount of variables that we identified as “redundant,” would an
+algorithmic be better suited to select representative and important
+variables? Consequently we were interested in comparing the feature
+selection that we did on our own in OLS regression with the feature
+selection resulting from the lasso and random forest model. Drawing from
+Breiman, our implementation of both algorithmic and data modeling shaped
+both the different datasets and “important” variables that we identified
+in each model. We selected the variables in our OLS regression model out
+of the dataset that we created in our initial selection of relevant
+variables. In doing so, we focalized features of individual institutions
+and student populations, including prevalent majors and racial, gender,
+and socioeconomic demographics. However, the nature of our lasso
+regression and random forest model required us to drop any variables
+with missingness from our dataset.
+>>>>>>> 47807e55b5ba1765ea600078df12f59c3eddd0fe
 
 Download and clean
 ------------------
