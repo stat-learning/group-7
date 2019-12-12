@@ -123,7 +123,7 @@ mobility to serve as sustainable solutions to social and economic
 stratification. As such, these scholars seek instead to integrate the
 consideration of unequal wealth and material conditions.
 
-Exploring the relationship between social origins and social mobility,
+Exploring the relationship between social origins and social mobility
 and income equality, sociologists Richard Breen and Jan Jonsson
 accentuate the persistent significance of parental socioeconomic
 circumstances in shaping the outcome of the latter. Promoting
