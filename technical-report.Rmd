@@ -462,7 +462,7 @@ numerics.mice.df4 <- complete(numerics.mice, 4)
 numerics.mice.df5 <- complete(numerics.mice, 5)
 ```
 
-```{r Combine numerical imputed values into one dataset}
+```{r Combine numerical imputed values into one dataset, cache=TRUE}
 # Create empty dataframe
 df_numerics.mice <- data.frame(matrix(NA, nrow = 2634, ncol = 75))
 
@@ -541,9 +541,7 @@ To capture **student demographics**, we use the following variables from our dat
 
 Since we essentially have three datasets with these variables, it's an interesting exercise to see how the results of our analysis might differ with and without imputation. To start, we'll run a linear model of the above specification on the dataset without any imputation. 
 
-While we initially wanted to split our data into training and test datasets to simulate the test MSE of our model, this proved impossible. Since there are levels in some of the categorical variables that have very few observations, it was not possible to get a test dataset which did not have levels that the training dataset had not seen before, resulting in a N/A value for the test MSE. As a next-best, we calculated the training MSE of our models for comparison.
-
-```{r Linear model without imputation}
+```{r Linear model without imputation, cache=TRUE}
 linear.model.1 <- lm(log_md_wage ~ 
                        PCIP01 +
                        PCIP03 +
@@ -624,14 +622,7 @@ plot(linear.model.1)
 # corr_matrix <- cor(linear.model.1, use = "complete.obs")
 ```
 
-To get an estimate of the accuracy of this model, we estimate our training mean squared error. 
-
-```{r Test MSE for linear model without imputation}
-MSE_lin = (df_final_section$log_md_wage - predict.lm(linear.model.1, df_final_section)) ^ 2
-MSE_lin
-```
-
-```{r Linear model with mice imputation}
+```{r Linear model with mice imputation, cache=TRUE}
 linear.model.2 <- lm(log_md_wage ~ 
                        PCIP01 +
                        PCIP03 +
@@ -708,7 +699,7 @@ par(mfrow = c(2, 2))
 plot(linear.model.2)
 ```
 
-```{r Linear model with missForest imputation}
+```{r Linear model with missForest imputation, cache=TRUE}
 linear.model.3 <- lm(log_md_wage ~ 
                        PCIP01 +
                        PCIP03 +
@@ -791,7 +782,9 @@ To supplement these linear regression models, we ran lasso models on each of the
 
 Note that when we do not impute any observations, we must use a subsection of the dataset to run a lasso model--only the observations without N/A values. 
 
-```{r Lasso model without imputation}
+#### Without imputation
+
+```{r Lasso model without imputation, cache=TRUE}
 # Data setup
 lasso.data <- cbind(numerics.section,
                     categoricals[1:2634,])
@@ -814,41 +807,59 @@ nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
 length(nonzero.lasso.coef)
 ```
 
-Here, the lasso regression resulted in 
+Here, the lasso regression resulted in 30 non-zero coefficients. We'll talk more about this later. 
 
-```{r Lasso model with mice imputation}
+#### Mice imputation
+
+```{r Lasso model with mice imputation, cache=TRUE}
 # Data setup
-lasso.data <- cbind(numerics.section,
-                    categoricals[1:2634,])
-lasso.data <- lasso.data %>%
-  select(-MD_EARN_WNE_P6)
-lasso.data.nona <- drop_na(lasso.data)
-X <- model.matrix(log_md_wage ~ ., data = lasso.data.nona)[, -1]
-Y <- lasso.data.nona$log_md_wage 
+lasso.mice.data <- df.final.mice %>%
+  select(-INSTNM, -MD_EARN_WNE_P6)
+lasso.mice.nona <- drop_na(lasso.mice.data)
+Xmice <- model.matrix(log_md_wage ~ ., data = lasso.mice.nona)
+Ymice <- lasso.mice.nona$log_md_wage 
 grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
 
 # Cross validation to find optimal penalty term
 set.seed(1)
-cv.out1 = cv.glmnet(X, Y, alpha = 1)
-bestlam1 = cv.out1$lambda.min
+cv.out.mice = cv.glmnet(Xmice, Ymice, alpha = 1)
+bestlam.mice = cv.out.mice$lambda.min
 
 #Run lasso and get non-zero coefficients of most important variables
-lasso.1 = glmnet(x = X, y = Y, alpha = 1, lambda = grid)
-lasso.coef = predict(lasso.1, type = "coefficients", s = bestlam1)[1:nrow(coef(lasso.1)),]
-nonzero.lasso.coef <- lasso.coef[lasso.coef != 0]
-length(nonzero.lasso.coef)
+lasso.2 = glmnet(x = Xmice, y = Ymice, alpha = 1, lambda = grid)
+lasso.coef.mice = predict(lasso.2, type = "coefficients", s = bestlam.mice)[1:nrow(coef(lasso.2)),]
+nonzero.lasso.mice.coef <- lasso.coef.mice[lasso.coef.mice != 0]
+length(nonzero.lasso.mice.coef)
+```
 
-#Get training MSE for LASSO
-lasso.pred = predict(lasso.1, s = bestlam1, X)
-MSE_lasso1 = mean ((lasso.pred - Y)^2)
-MSE_lasso1
+#### missForest imputation
+
+```{r Lasso model with missForest imputation, cache=TRUE}
+# Data setup
+lasso.missForest.data <- missForest_df %>%
+  select(-INSTNM, -MD_EARN_WNE_P6)
+lasso.missForest.nona <- drop_na(lasso.missForest.data)
+XmissForest <- model.matrix(log_md_wage ~ ., data = lasso.missForest.nona)
+YmissForest <- lasso.missForest.nona$log_md_wage 
+grid <- seq(from = 1e4, to = 1e-2, length.out = 100)
+
+# Cross validation to find optimal penalty term
+set.seed(1)
+cv.out.missForest = cv.glmnet(XmissForest, YmissForest, alpha = 1)
+bestlam.missForest = cv.out.missForest$lambda.min
+
+#Run lasso and get non-zero coefficients of most important variables
+lasso.3 = glmnet(x = XmissForest, y = YmissForest, alpha = 1, lambda = grid)
+lasso.coef.missForest = predict(lasso.3, type = "coefficients", s = bestlam.missForest)[1:nrow(coef(lasso.3)),]
+nonzero.lasso.missForest.coef <- lasso.coef.missForest[lasso.coef.missForest != 0]
+length(nonzero.lasso.missForest.coef)
 ```
 
 ### Random forest modeling
 
 In order to get a sense of what variables are deemed most important by a more data-oriented approach, we decided to run a random forest on our data set and measure variable importance.
 
-```{r Random Forest}
+```{r Random Forest with non-imputed data, cache=TRUE}
 df_forest <- df_final %>%
   select(-INSTNM, -MD_EARN_WNE_P6) %>%
   drop_na()
@@ -860,7 +871,7 @@ varImpPlot(rf.college, cex = 0.6)
 print(rf.college)
 ```
 
-```{r Random Forest mice}
+```{r Random Forest mice, cache=TRUE}
 df.forest.mice <- df.final.mice %>%
   select(-INSTNM, -MD_EARN_WNE_P6)
 
@@ -871,7 +882,7 @@ varImpPlot(rf.college.mice, cex = 0.6)
 print(rf.college.mice)
 ```
 
-```{r Random Forest missForest}
+```{r Random Forest missForest, cache=TRUE}
 missForest_df_forest <- missForest_df %>%
   select(-INSTNM, -MD_EARN_WNE_P6)
 
