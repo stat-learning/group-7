@@ -164,7 +164,7 @@ complete information. Before cleaning, the 2014-2015 dataset contained
 1,977 variables and 7,703 observations, and each observation represents
 one participating institution. Institutions included both degree and
 non-degree graduating institutions. To address our question, we selected
-the median earnings of students size years after graduation as our
+the median earnings of students six years after graduation as our
 response variable. In considering the extent of possible outliers, we
 chose to utilize median earnings over the mean, and we logged the
 response variable to account for the skew.
