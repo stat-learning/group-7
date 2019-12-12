@@ -1,3 +1,39 @@
+-   [Abstract](#abstract)
+-   [Introduction](#introduction)
+    -   [Background](#background)
+    -   [Research question](#research-question)
+    -   [Theories of inequality](#theories-of-inequality)
+-   [Data](#data)
+    -   [Download and clean](#download-and-clean)
+    -   [Exploratory data analysis](#exploratory-data-analysis)
+        -   [Response variable](#response-variable)
+        -   [Pairwise scatterplots](#pairwise-scatterplots)
+        -   [Correlations](#correlations)
+        -   [Missingness](#missingness)
+        -   [Principal component
+            analysis](#principal-component-analysis)
+    -   [Imputation](#imputation)
+        -   [Imputation with `mice`](#imputation-with-mice)
+        -   [Multiple imputation with
+            `missForest`](#multiple-imputation-with-missforest)
+-   [Modeling](#modeling)
+    -   [Linear models](#linear-models)
+        -   [Without imputation](#without-imputation)
+        -   [With imputation using `mice`](#with-imputation-using-mice)
+        -   [With imputation using
+            `missForest`](#with-imputation-using-missforest)
+        -   [Imputation Results](#imputation-results)
+    -   [Lasso models](#lasso-models)
+        -   [Without imputation](#without-imputation-1)
+        -   [Mice imputation](#mice-imputation)
+        -   [missForest imputation](#missforest-imputation)
+    -   [Random forest models](#random-forest-models)
+        -   [Results](#results-4)
+        -   [Imputation Results](#imputation-results-1)
+    -   [Analysis of the residuals](#analysis-of-the-residuals)
+-   [Discussion](#discussion)
+-   [Sources](#sources)
+
 Abstract
 ========
 
@@ -6,41 +42,152 @@ influence on the earnings of graduates from different institutions of
 higher education. To do so, we use data from the College Scorecard to
 predict the earnings of the median graduate from a specific institution
 6 years after graduation. On top of personal characteristics such as
-demographics and family income, we find that institutional
-characteristics such as \_\_\_ may lead to higher incomes
-post-graduation. To estimate earnings, we used a number of different
-statistical techniques: (1) an OLS regression, with predictors pulled
-from the literature; (2) a random forest, with variable importances.
-Note also that due to the sheer amount of missing data in our dataset,
-we estimated the relationship between our predictors and earnings both
+demographics, we find that the share of degrees awarded in certain
+fields may lead to higher incomes post-graduation. To estimate earnings,
+we used a number of different statistical techniques: (1) an OLS
+regression, with predictors drawn from the literature; (2) a lasso
+regression; (3) a random forest, with variable importances. Note also
+that due to the sheer amount of missing data in our dataset, we
+estimated the relationship between our predictors and earnings both
 without imputation, which removed many observations, as well as with
 observations imputed with a random forest technique.
 
 Introduction
 ============
 
-In the past decade, concern with analyzing and publicizing the
-employment outcomes of higher educational institutions and career
-training programs has become increasingly widespread. The release of the
-College Scorecard dataset by the Obama Administration in 2013
-facilitated greater attention to the capacity of incoming undergraduate
-students to negotiate both the economic cost and prospective pay-off of
-higher education. In a public announcement, the U.S. Department of
-Education expressed their concern with enabling students tp make
-informed and economically sound college decisions, citing the Obama
-Administration’s commitment to providing “hardworking” students “a real
-opportunity to earn an affordable, high quality degree or credential
-that offers a clear path to economic security and success.”
+Background
+----------
 
-Theories of Inequality
+In the past decade, concern with publicizing the employment outcomes of
+higher educational institutions and career training programs has become
+increasingly widespread. The release of the College Scorecard dataset by
+the Obama Administration in 2013 facilitated greater attention to the
+capacity of incoming undergraduate students to negotiate both the
+economic cost and prospective pay-off of higher education. In a public
+announcement, the U.S. Department of Education expressed their concern
+with enabling students to make informed and economically sound college
+decisions, citing the Obama Administration’s commitment to providing
+students “a real opportunity to earn an affordable, high quality degree
+or credential that offers a clear path to economic security and
+success.”
+
+Other efforts to collect college earnings data for similar purposes have
+been constrained by multiple factors. PayScale is a site that discloses
+the self-reported earnings of students by degree and institution,
+subsequently relying on data that is biased by voluntary reporting.
+Certain states, such as Texas and North Carolina, have used in-state
+unemployment insurance records and graduate records to produce
+tabulations of graduate earnings data. However, these tabulations only
+include in-state students and do not include more mobile students that
+may receive higher earnings. Recognizing the limitations of previous
+datasets, the Longitudinal Employer-Household Dynamics (LEHD) program
+collaborated with universities, the U.S. Census Bureau, and state
+agencies to launch an experimental research project in early 2018. Using
+institutional transcript data and a national database of jobs, the
+program released tabulations of post-graduation earnings by the degree,
+the partner institution, and the field of students. However, the dataset
+currently represents only a small number of colleges.
+
+As discussed later on below, we confronted our own challenges in our
+analysis of the College Scorecard dataset. While we optimized the
+usability of our dataset, the accessibility of college earnings data and
+institutional features still slightly limited our ability to engage with
+our theoretical research question holistically.
+
+Research question
+-----------------
+
+We were similarly interested in identifying the factors that are
+important to determining the income of graduates from a given college
+several years after graduation. While the interconnection between
+educational and income inequality is clear, how can we better understand
+this mutual impact? While research has shown that receiving a college
+education enhances economic mobility, what are the characteristics of
+individual institutions that might further enhance or diminish student
+income post-graduation? Moreover, to what extent does facilitating equal
+opportunity, and the accessibility of higher education, actually address
+socioeconomic inequality? In short, to what extent do colleges promote
+social mobility, and how can we understand the role of prestige and
+privilege?
+
+Theories of inequality
 ----------------------
 
-Scholars examining the politics of social inequality have
+Scholars examining the politics of social and economic inequality
+advance multiple theoretical frameworks. In social mobility research,
+sociologists examine the relationship between the inequality of
+opportunity and social mobility. Consequently, certain scholars question
+the myth of meritocracy and the capacity of equal opportunity and social
+mobility to serve as sustainable solutions to social and economic
+stratification. As such, these scholars seek instead to integrate the
+consideration of unequal wealth and material conditions.
 
-Equality of opportunity v. condition
+Exploring the relationship between social origins and social mobility,
+and income equality, sociologists Richard Breen and Jan Jonsson
+accentuate the persistent significance of parental socioeconomic
+circumstances in shaping the outcome of the latter. Promoting
+“prosperity” over “upward mobility,” Neil Gilbert, a Professor of Social
+welfare and Social Service, argues that increases in income equality do
+not necessarily address the problem of social and economic inequality in
+the United States. Acknowledging that a college education is positively
+correlated with higher income, Gilbert promotes the recognition of
+“relative mobility.” As such, he argues that the increase in income
+enabled by higher education does not necessarily correspond to the equal
+distribution of income between graduates of similar fields and
+institutions.
+
+While professors of economics Eric Eide and Michael Hilmer argue that
+the prestige of an institution increases the earnings of graduates, they
+accentuate how the field that graduates choose ultimately plays a much
+more significant role in accounting for the variation in earnings
+post-graduation. In accordance with these scholars, we were interested
+in discovering the extent that social origins and factors beyond
+institutional prestige and educational attainment itself shape earnings.
 
 Data
 ====
+
+The U.S. Department of Education released the first College Scorecard
+dataset in 2013 in an effort to facilitate the transparency of
+institutional outcomes and features. The dataset is collected through
+the consolidation of federal reports from institutions as well as
+financial federal aid and IRS tax records. Redesigned in 2015, the data
+includes extensive information on the average earnings, debt, and
+employment outcomes of student cohorts up to ten years after graduation,
+encompassing institutional demographics from the 1997-1997 to 2017-2018
+academic year.
+
+In our project, we chose to focalize the dataset that was released at
+the 2014-2015 academic year. This dataset provides the most recent and
+complete information. Before cleaning, the 2014-2015 dataset contained
+1,977 variables and 7,703 observations, and each observation represents
+one participating institution. Institutions included both degree and
+non-degree graduating institutions. To address our question, we selected
+the median earnings of students size years after graduation as our
+response variable. In considering the extent of possible outliers, we
+chose to utilize median earnings over the mean, and we logged the
+response variable to account for the skew.
+
+As discussed further below, the large extent of missingness in our data
+limited the usability of all of our variables. During our initial
+exploration, narrowed down our dataset to include only four year
+institutions and dropped about one hundred of the variables that were
+either protected for privacy or did not contain any information. A
+majority of our variables contained metrics that measured similar
+institutional aspects. Consequently, as such, drawing from our
+theoretical approach we further reduced our dataset by eliminating
+redundant variables and variables that were apparently irrelevant to our
+question.
+
+However, we recognized the potentially consequential impact of the
+extent of our data’s missingness on our capacity to draw informed
+inferences. As such, discussed further below, we also ran multiple
+imputation on the initial large dataset, and implemented all of our
+models on the imputed dataset as well. We compared those results to the
+results of the models that were implemented on the dataset including
+missingness. Recognizing the likeliness that missingness of our dataset
+is not at random however, our capacity to make definitive statements
+from our models after imputation is still limited.
 
 Download and clean
 ------------------
@@ -483,26 +630,25 @@ The six most negatively associated with PC1 are:
 One way of interpreting PC1, then, could be as a measure of the
 privelege (or lack thereof) of the students.
 
-    head(pc1.ordered.rotations)
+    head(pc1.ordered.rotations)[,1:2]
 
-    ##                         PC1
-    ## FIRST_GEN         0.2230471
-    ## AGE_ENTRY         0.2198535
-    ## PELL_EVER         0.2193488
-    ## PCTPELL           0.2059191
-    ## WDRAW_ORIG_YR4_RT 0.1959303
-    ## LO_INC_DEBT_MDN   0.1468980
+    ##                         PC1         PC2
+    ## FIRST_GEN         0.2230471  0.01276022
+    ## AGE_ENTRY         0.2198535  0.04969136
+    ## PELL_EVER         0.2193488  0.00783683
+    ## PCTPELL           0.2059191  0.08313005
+    ## WDRAW_ORIG_YR4_RT 0.1959303  0.04487854
+    ## LO_INC_DEBT_MDN   0.1468980 -0.11358878
 
+    tail(pc1.ordered.rotations)[,1:2]
 
-    tail(pc1.ordered.rotations)
-
-    ##                  PC1
-    ## FAMINC    -0.1757293
-    ## PCIP54    -0.1863051
-    ## PCIP23    -0.1936778
-    ## PCIP45    -0.1938171
-    ## PCIP26    -0.1967149
-    ## DEPENDENT -0.2249687
+    ##                  PC1         PC2
+    ## FAMINC    -0.1757293  0.02755402
+    ## PCIP54    -0.1863051 -0.05755756
+    ## PCIP23    -0.1936778 -0.05809287
+    ## PCIP45    -0.1938171 -0.05610580
+    ## PCIP26    -0.1967149 -0.06945384
+    ## DEPENDENT -0.2249687 -0.04369329
 
 We can do the same thing with the second principal component.
 
@@ -530,25 +676,25 @@ addition to their specific major interests. Higher PC2 values may imply
 more of a focus on more rewarded majors (such as engineering or computer
 science).
 
-    head(pc2.ordered.rotations)
+    head(pc2.ordered.rotations)[,1:2]
 
-    ##                  PC1
-    ## PCIP15    0.07156320
-    ## NUMBRANCH 0.11458070
-    ## PCIP11    0.10698231
-    ## PCTFLOAN  0.09856918
-    ## PCTPELL   0.20591914
-    ## PCIP10    0.02538417
+    ##                  PC1        PC2
+    ## PCIP15    0.07156320 0.16870378
+    ## NUMBRANCH 0.11458070 0.16679234
+    ## PCIP11    0.10698231 0.12900916
+    ## PCTFLOAN  0.09856918 0.11946093
+    ## PCTPELL   0.20591914 0.08313005
+    ## PCIP10    0.02538417 0.05119268
 
-    tail(pc2.ordered.rotations)
+    tail(pc2.ordered.rotations)[,1:2]
 
-    ##                             PC1
-    ## logdebt              0.05305026
-    ## FEMALE_DEBT_MDN      0.07680293
-    ## FIRSTGEN_DEBT_MDN    0.09731630
-    ## PELL_DEBT_MDN        0.08645264
-    ## NOTFIRSTGEN_DEBT_MDN 0.10304945
-    ## DEBT_MDN             0.10514484
+    ##                             PC1        PC2
+    ## logdebt              0.05305026 -0.3111716
+    ## FEMALE_DEBT_MDN      0.07680293 -0.3128787
+    ## FIRSTGEN_DEBT_MDN    0.09731630 -0.3145954
+    ## PELL_DEBT_MDN        0.08645264 -0.3245655
+    ## NOTFIRSTGEN_DEBT_MDN 0.10304945 -0.3275289
+    ## DEBT_MDN             0.10514484 -0.3381817
 
 Imputation
 ----------
@@ -580,6 +726,159 @@ categorical variables, so we do not have to impute anything there.
 Below we impute the continuous variables.
 
     numerics.mice <- mice(numerics.section, m=5, maxit = 30, method = 'pmm', seed = 500)
+
+    ## 
+    ##  iter imp variable
+    ##   1   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   1   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   1   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   1   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   1   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   2   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   2   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   2   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   2   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   2   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   3   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   3   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   3   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   3   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   3   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   4   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   4   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   4   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   4   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   4   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   5   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   5   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   5   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   5   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   5   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   6   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   6   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   6   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   6   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   6   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   7   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   7   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   7   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   7   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   7   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   8   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   8   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   8   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   8   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   8   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   9   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   9   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   9   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   9   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   9   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   10   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   10   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   10   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   10   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   10   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   11   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   11   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   11   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   11   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   11   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   12   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   12   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   12   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   12   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   12   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   13   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   13   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   13   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   13   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   13   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   14   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   14   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   14   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   14   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   14   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   15   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   15   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   15   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   15   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   15   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   16   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   16   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   16   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   16   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   16   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   17   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   17   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   17   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   17   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   17   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   18   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   18   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   18   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   18   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   18   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   19   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   19   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   19   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   19   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   19   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   20   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   20   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   20   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   20   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   20   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   21   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   21   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   21   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   21   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   21   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   22   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   22   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   22   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   22   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   22   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   23   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   23   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   23   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   23   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   23   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   24   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   24   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   24   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   24   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   24   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   25   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   25   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   25   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   25   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   25   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   26   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   26   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   26   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   26   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   26   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   27   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   27   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   27   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   27   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   27   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   28   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   28   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   28   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   28   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   28   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   29   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   29   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   29   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   29   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   29   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   30   1  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   30   2  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   30   3  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   30   4  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
+    ##   30   5  PCIP01  PCIP03  PCIP04  PCIP05  PCIP09  PCIP10  PCIP11  PCIP12  PCIP13  PCIP14  PCIP15  PCIP16  PCIP19  PCIP22  PCIP23  PCIP24  PCIP25  PCIP26  PCIP27  PCIP29  PCIP30  PCIP31  PCIP38  PCIP39  PCIP40  PCIP41  PCIP42  PCIP43  PCIP44  PCIP45  PCIP46  PCIP47  PCIP48  PCIP49  PCIP50  PCIP51  PCIP52  PCIP54  UGDS  UGDS_WHITE  UGDS_BLACK  UGDS_HISP  UGDS_ASIAN  UGDS_AIAN  UGDS_NHPI  UGDS_2MOR  UGDS_NRA  UGDS_UNKN  PPTUG_EF  PCTPELL  INEXPFTE  TUITFTE  PCTFLOAN  WDRAW_ORIG_YR4_RT  DEBT_MDN  LO_INC_DEBT_MDN  MD_INC_DEBT_MDN  HI_INC_DEBT_MDN  PELL_DEBT_MDN  NOPELL_DEBT_MDN  FEMALE_DEBT_MDN  MALE_DEBT_MDN  FIRSTGEN_DEBT_MDN  NOTFIRSTGEN_DEBT_MDN  FEMALE  LOAN_EVER  PELL_EVER  AGE_ENTRY  DEPENDENT  FIRST_GEN  FAMINC  logdebt
 
     numerics.mice.df1 <- complete(numerics.mice, 1)
     numerics.mice.df2 <- complete(numerics.mice, 2)
@@ -623,46 +922,49 @@ makes it much more simple.
                               categoricals[1:2634,])
     missForest.imputation <- missForest(nonchars.section)
 
+    ##   missForest iteration 1 in progress...done!
+    ##   missForest iteration 2 in progress...done!
+    ##   missForest iteration 3 in progress...done!
+    ##   missForest iteration 4 in progress...done!
+    ##   missForest iteration 5 in progress...done!
+    ##   missForest iteration 6 in progress...done!
+    ##   missForest iteration 7 in progress...done!
+
     missForest_df <- cbind.data.frame(INSTNM = df_final_section$INSTNM,
                                       missForest.imputation$ximp)
 
 Modeling
---------
+========
 
 With our data now in workable format, with two different ways of
 imputing missingness, we now turn to modeling our data.
 
-### Linear models
+Linear models
+-------------
 
 Following the literature cited in our introduction, we built a
 theoretical model on what might impact graduates' earnings. This model
 is described with the equation below.
 
-$$median \space earnings = \alpha + \beta_1 college \space characteristics + \beta_2 student \space demographics + \epsilon$$
+$$median \\space earnings = \\alpha + \\beta\_1 college \\space characteristics + \\beta\_2 student \\space demographics + \\epsilon$$
 
 To capture **college characteristics**, we use the following variables:
-
-- percentage of degrees awarded in many different majors (`PCIP01`, `PCIP02`, etc.) 
-- size of the school (`UGDS`) 
-- instructional expenditures per student (`INEXPFTE`) 
-- region of the school (`REGION`)
-- share of students that are part-time (`PPTUG_EF`) 
-- tuition revenue per student (`TUITFTE`) 
-- ownership of school (`CONTROL`) 
-- highest degree awarded (`HIGHDEG`)
+- percentage of degrees awarded in many different majors (`PCIP01`,
+`PCIP02`, etc.) - size of the school (`UGDS`) - instructional
+expenditures per student (`INEXPFTE`) - region of the school (`REGION`)
+- share of students that are part-time (`PPTUG_EF`) - tuition revenue
+per student (`TUITFTE`) - ownership of school (`CONTROL`) - highest
+degree awarded (`HIGHDEG`)
 
 To capture **student demographics**, we use the following variables from
-our dataset: 
+our dataset: - racial makeup of the school (`UGDS_WHITE`) - debt after
+graduation (`DEBT_MDN`) - gender makeup of school (`FEMALE`) - age
+makeup of school (`AGE_ENTRY`) - share of students that are
+first-generation (`FIRST_GEN`) - median family income (`FAMINC`) - share
+of students who have received a loan (`LOAN_EVER`) - share of students
+who have received a Pell Grant (`PELL_EVER`)
 
-- racial makeup of the school (`UGDS_WHITE`) 
-- debt after graduation (`DEBT_MDN`) 
-- gender makeup of school (`FEMALE`) 
-- age makeup of school (`AGE_ENTRY`) 
-- share of students that are first-generation (`FIRST_GEN`) 
-- median family income (`FAMINC`) - share of students who have received a loan (`LOAN_EVER`) 
-- share of students who have received a Pell Grant (`PELL_EVER`)
-
-#### Without imputation
+### Without imputation
 
 Since we essentially have three datasets with these variables, it's an
 interesting exercise to see how the results of our analysis might differ
@@ -818,36 +1120,26 @@ above specification on the dataset without any imputation.
     ## F-statistic: 76.15 on 64 and 2304 DF,  p-value: < 2.2e-16
 
     #Run model diagnostics
-
-    #Residual plot
-    plot(linear.model.1, 1)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-1.png)
-
-    #QQ [;pt
-    plot(linear.model.1, 2)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-2.png)
-
-    #Scale location plot
-    plot(linear.model.1, 3)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-3.png)
-
-    #Residual 2 
-    plot(linear.model.1, 4)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-4.png)
-
-    #Quartet
     par(mfrow = c(2, 2))
     plot(linear.model.1)
 
-![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-5.png)
+![](technical-report_files/figure-markdown_strict/Linear%20model%20without%20imputation-1.png)
 
-    # #Check for multicollinearity
-    # ols_vif_tol(linear.model.1)
-    # corr_matrix <- cor(linear.model.1, use = "complete.obs")
+#### Results
+
+This model had a lot of unsurprising results, such as the importance of
+degrees in typically high/low-paying careers, but also had some
+surprises. The variable for expenditure per student, for example, was
+not significant, and neither was family income. It seems that
+controlling for other aspects of colleges is enough to render it
+insignificant.There were only two significant regions, neither of which
+are New England.
+
+As our diagnostic plots show, the model is quite robust in terms of
+linearity, normality, and homoskedasticity, although the tails of the
+distribution are a bit fatter than normal.
+
+### With imputation using `mice`
 
     linear.model.2 <- lm(log_md_wage ~ 
                            PCIP01 +
@@ -998,34 +1290,6 @@ above specification on the dataset without any imputation.
     ## F-statistic: 74.37 on 65 and 2568 DF,  p-value: < 2.2e-16
 
     #Run model diagnostics
-
-    #Residual plot
-    plot(linear.model.2, 1)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-1.png)
-
-    #QQ [;pt
-    plot(linear.model.2, 2)
-
-    ## Warning: not plotting observations with leverage one:
-    ##   1236
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-2.png)
-
-    #Scale location plot
-    plot(linear.model.2, 3)
-
-    ## Warning: not plotting observations with leverage one:
-    ##   1236
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-3.png)
-
-    #Residual 2 
-    plot(linear.model.2, 4)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-4.png)
-
-    #Quartet
     par(mfrow = c(2, 2))
     plot(linear.model.2)
 
@@ -1035,7 +1299,9 @@ above specification on the dataset without any imputation.
     ## Warning: not plotting observations with leverage one:
     ##   1236
 
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-5.png)
+![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20mice%20imputation-1.png)
+
+### With imputation using `missForest`
 
     linear.model.3 <- lm(log_md_wage ~ 
                            PCIP01 +
@@ -1186,34 +1452,6 @@ above specification on the dataset without any imputation.
     ## F-statistic: 62.68 on 65 and 2568 DF,  p-value: < 2.2e-16
 
     #Run model diagnostics
-
-    #Residual plot
-    plot(linear.model.3, 1)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-1.png)
-
-    #QQ [;pt
-    plot(linear.model.3, 2)
-
-    ## Warning: not plotting observations with leverage one:
-    ##   1236
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-2.png)
-
-    #Scale location plot
-    plot(linear.model.3, 3)
-
-    ## Warning: not plotting observations with leverage one:
-    ##   1236
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-3.png)
-
-    #Residual 2 
-    plot(linear.model.3, 4)
-
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-4.png)
-
-    #Quartet
     par(mfrow = c(2, 2))
     plot(linear.model.3)
 
@@ -1223,9 +1461,19 @@ above specification on the dataset without any imputation.
     ## Warning: not plotting observations with leverage one:
     ##   1236
 
-![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-5.png)
+![](technical-report_files/figure-markdown_strict/Linear%20model%20with%20missForest%20imputation-1.png)
 
-### Lasso models
+### Imputation Results
+
+The results after imputation do not differ radically from the
+non-imputed results. There are a few changes in the significance of
+different shares of majors, as well as a few changes in the significance
+of other variables, but the models are conceptually quite consistent.
+However, an interesting note is that the *R*<sup>2</sup> is lower for
+the imputed models, despite having more cases.
+
+Lasso models
+------------
 
 To supplement these linear regression models, we ran lasso models on
 each of these datasets to see if the variables which survived
@@ -1236,7 +1484,7 @@ Note that when we do not impute any observations, we must use a
 subsection of the dataset to run a lasso model--only the observations
 without N/A values.
 
-#### Without imputation
+### Without imputation
 
     # Data setup
     lasso.data <- cbind(numerics.section,
@@ -1261,10 +1509,11 @@ without N/A values.
 
     ## [1] 30
 
-Here, the lasso regression resulted in 30 non-zero coefficients. We'll
-talk more about this later.
+#### Results
 
-#### Mice imputation
+    The lasso model included many degree variables, some of which were not surprising in that they reflected high-paying and low-paying fields, but what was interesting was that Legal degrees had a negative effect. This makes sense, however, when we consider that this data is filtered for 4 year degree colleges, and thus legal studies are all pre-law, and so these students probably have some more education to go before they start earning a lot of money. The lasso model also chose interesting demographic variables-- where we chose the share of white students as we beleived white vs. non-white to probablly be the most important distinction in student demographics, but the lasso chose Asian, biracial, and unknown racial shares. 
+
+### Mice imputation
 
     # Data setup
     lasso.mice.data <- df.final.mice %>%
@@ -1287,7 +1536,14 @@ talk more about this later.
 
     ## [1] 40
 
-#### missForest imputation
+#### Results
+
+Some interesting differences in this model is the inclusion of more
+racial demographics, expenditure pers student, as well as CONTROL2, the
+dummy variable for private nonprofit colleges. This model eliminated the
+highest degree variable as well.
+
+### missForest imputation
 
     # Data setup
     lasso.missForest.data <- missForest_df %>%
@@ -1310,7 +1566,12 @@ talk more about this later.
 
     ## [1] 37
 
-### Random forest modeling
+#### Results
+
+    This imputed lasso is similar to the previous one, but it also included average family income, and didn’t eliminate the graduate school dummy variable. 
+
+Random forest models
+--------------------
 
 In order to get a sense of what variables are deemed most important by a
 more data-oriented approach, we decided to run a random forest on our
@@ -1322,8 +1583,6 @@ data set and measure variable importance.
 
     set.seed(1)
     rf.college = randomForest(log_md_wage  ~., data = df_forest, importance = TRUE)
-    importance(rf.college)
-
     varImpPlot(rf.college, cex = 0.6)
 
 ![](technical-report_files/figure-markdown_strict/Random%20Forest%20with%20non-imputed%20data-1.png)
@@ -1340,13 +1599,26 @@ data set and measure variable importance.
     ##           Mean of squared residuals: 0.03825167
     ##                     % Var explained: 74.81
 
+### Results
+
+The random forest reflects a different measure of variable importance
+than our linear models or even our lasso. Here, the is less of an
+emphasis on causation, and more on prediction. The most important
+variables here are the best ones to use to predict the wages of students
+from a particular school, so they are still useful in the sense that
+they reflect which variables capture a lot of the variation by
+themselves. For example, family income is something that we believed to
+be important, and yet was not significant in most of our models so far.
+Here, however, it is one of the more important variables. The other top
+variables include the share of Visual and Performing Arts degrees, the
+share of Health Professions degrees, statistics surrounding Pell grants,
+region, and share of Asian students.
+
     df.forest.mice <- df.final.mice %>%
       select(-INSTNM, -MD_EARN_WNE_P6)
 
     set.seed(1)
     rf.college.mice = randomForest(log_md_wage  ~., data = df.forest.mice, importance = TRUE)
-    importance(rf.college.mice)
-    
     varImpPlot(rf.college.mice, cex = 0.6)
 
 ![](technical-report_files/figure-markdown_strict/Random%20Forest%20mice-1.png)
@@ -1368,8 +1640,6 @@ data set and measure variable importance.
 
     set.seed(1)
     rf.college.missForest = randomForest(log_md_wage  ~., data = missForest_df_forest, importance = TRUE)
-    importance(rf.college.missForest)
-
     varImpPlot(rf.college.missForest, cex = 0.6)
 
 ![](technical-report_files/figure-markdown_strict/Random%20Forest%20missForest-1.png)
@@ -1386,6 +1656,220 @@ data set and measure variable importance.
     ##           Mean of squared residuals: 0.06611106
     ##                     % Var explained: 71.01
 
-### Discussion
+### Imputation Results
 
-### Sources
+The imputed random forests are slightly different, but there are not any
+radical changes. An interesting note is that the variance explained by
+the forests did decrease after the imputation.
+
+Analysis of the residuals
+-------------------------
+
+We've done a lot of modeling. However, there's one interesting approach
+left to take: an analysis of the residuals. What does it mean for a
+college to have bigger or smaller residuals? If a college's predicted
+median wage is significantly less than its actual, this college could be
+thought of as "outperforming" its statistics; similarly, if a college's
+predicted value is significantly higher, the college is underperforming.
+
+We use the first linear model to find the residuals for each college,
+and pull out the top 6 "overperformers" and top 6 "underperformers." We
+also pull out Reed's values for curiosity's sake.
+
+    residuals <- tibble(INSTNM = df_final_section_nona$INSTNM,
+                        residual = df_final_section_nona$log_md_wage - 
+                          predict.lm(linear.model.1, df_final_section_nona))
+
+    ordered.residuals <- residuals[order(residuals$residual),]
+
+    head(ordered.residuals)
+
+    ## # A tibble: 6 x 2
+    ##   INSTNM                                        residual
+    ##   <chr>                                            <dbl>
+    ## 1 Samuel Merritt University                       -5.95 
+    ## 2 Landmark College                                -1.09 
+    ## 3 Centura College-Virginia Beach                  -0.836
+    ## 4 Berklee College of Music                        -0.823
+    ## 5 Wright Career College                           -0.798
+    ## 6 Pacific College of Oriental Medicine-New York   -0.780
+
+    tail(ordered.residuals)
+
+    ## # A tibble: 6 x 2
+    ##   INSTNM                              residual
+    ##   <chr>                                  <dbl>
+    ## 1 American Public University System      0.706
+    ## 2 West Coast University-Dallas           0.712
+    ## 3 University of Phoenix-Puerto Rico      0.761
+    ## 4 Brigham Young University-Provo         0.771
+    ## 5 Neumont College of Computer Science    0.868
+    ## 6 University of Puerto Rico-Mayaguez     1.27
+
+Samuel Merritt University seems to be particularly bad in its
+performance relative to predicted wages.
+
+Where does Reed stand in this?
+
+    ordered.residuals[ordered.residuals$INSTNM == "Reed College",]
+
+    ## # A tibble: 1 x 2
+    ##   INSTNM       residual
+    ##   <chr>           <dbl>
+    ## 1 Reed College   -0.302
+
+Reed under-performs the model's prediction, but not nearly as
+dramatically as the worst under-performers.
+
+One last potentially interesting thing to do would be to see whether the
+residuals of our model depend on the specific school's location in the
+PC1 v PC2 biplot. We've updated our biplot below, where the colors are
+equivalent to the residual value.
+
+    pcs$residuals <- residuals$residual
+      
+    ggplot() + 
+      geom_point(data = pcs, aes(x = PC1, y = PC2, color = residuals)) +
+      theme_minimal()
+
+![](technical-report_files/figure-markdown_strict/Biplot%20update%20with%20residuals-1.png)
+
+There appears to be no relationship between the position of a school on
+the PC biplot and its residual value, which is a very good sign for the
+validity of our model.
+
+Discussion
+==========
+
+Note on Imputation: The R squared of the models with imputed data are
+lower, which is counterintuitive, because imputation should increase the
+number of cases, and thus the certainty of our model. Additionally, the
+QQ plots reveal fatter tails in the imputed model distribution. A
+potential explanation for these changes could be that schools with
+missing data could tend to be more non-traditional than other schools,
+as they already are outliers in the sense that their data is missing.
+These schools could possibly not fit as neatly in with the schools we
+currently have, lowering the R squared.
+
+Both (1) the demographic makeup of a school’s student body and (2) a
+school’s institutional characteristics play a major role in determining
+the future wages of graduates. While the most significant variables
+varied between models and datasets, across all specifications, the share
+of the student body receiving a degree in a given major was highly
+associated with both lower and higher incomes, depending on major. This
+makes a lot of intuitive sense; we think that a computer programmer
+will, on average, make more than an english teacher. The cases in this
+data set are not students, however, but colleges. It is possible also,
+then, that colleges with certain kinds of degree ratios are better at
+ensuring higher earnings for their students, but the nature of degrees
+awarded themselves most likely have an effect on future earnings as
+well. Both these effects probably have an impact on our results.
+
+Racial and class demographics also consistently showed up in all of our
+models as significant. In one way or another, all our models considered
+both the racial and socio-economic composition of schools as very
+relevant in relation to future wages.
+
+An interesting note is that the results of racial variables are
+counterintuitive—it seems that an increase in the share of white
+students results in lower wages overall. However, because the cases are
+schools and not individuals in this data set, this result could make
+sense. Diversity could impact wages in several positive ways, including
+increasing the prestige of a school and the practical aspect of a
+diverse student body making for a better learning environment.
+
+These results are consistent with our expectations, as well as our data
+analysis. Our PCA revealed that most of the variation between schools in
+this data set is due to privilege of the students first and then nature
+of the school itself, and so that this kind of relationship holds with
+wages as a dependent variable is not too surprising.
+
+This project does have many weaknesses, however. Many of the variables
+that we wanted to use, such as average standardized test scores, were
+unusable due to missing data. There is also much information that our
+data did not capture, and, realistically, can never truly be captured in
+one dataset and compared between different schools. Arguably, there is
+much more to Reed College than the amalgamation of the roughly 80
+variables that we used in this project, or even the 2000 variables in
+our starting data set. Capturing and comparing every important
+characteristic of a college in such a quantitative way is probably
+impossible.
+
+Our models most likely have a decent amount of internal validity, but
+they definitely do not have much external validity. The financial and
+cultural aspects of education beyond the United States would cause our
+models to give inaccurate results-- even our variables accounting for
+region capture this reality within the United States itself.
+
+Our results imply that college by itself is not enough to solve the
+issue of a lack of social mobility in the United States. Colleges do not
+eliminate the previous characteristics of its student body. However,
+since we do not have data on earnings of non-college institutions, it’s
+hard to say what effect college education has on the importance of
+demographics such as race and gender when compared to the alternative.
+
+Further topics that could be investigated include investigating other
+years, datasets, and countries, as well as in-state comparisons in order
+to get a more homogeneous community of schools. Another kind of analysis
+that could be done is a more micro-focused project concerning the future
+wages of individual students within a school, rather than a macro focus
+on just the characteristics and demographics of schools, which could
+fail to capture the variation within them. Our analysis could also try
+to extend to other educational institutions, such as high schools.
+
+Sources
+=======
+
+The American Economic Review 79, no. 2 (1989): 247–52.Oehrlein, Paul.
+“Determining the Future Income of College Students,” n.d., 34
+
+Bradford, Stuart. "Do Elite Colleges Lead to Higher Salaries? Only for
+Some Professions" The Wall Street Journal, January
+2016.<https://www.wsj.com/articles/do-elite-colleges-lead-to-higher-salaries-only-for-some-professions-1454295674>
+
+Breen, R., and Jonsson, J. O. (2005), “Inequality of Opportunity in
+Comparative Perspective: Recent Research on Educational Attainment and
+Social Mobility,” Annual Review of Sociology, 31, 223–243.
+<https://doi.org/10.1146/annurev.soc.31.041304.122232>.
+
+Breiman, L. (2001), “Statistical Modeling: The Two Cultures (with
+comments and a rejoinder by the author),” Statistical Science, 16,
+199–231. <https://doi.org/10.1214/ss/1009213726>.
+
+Brewer, Dominic J, Eric Eide, and Ronald G Ehrenberg. “Does It Pay To
+Attend An Elite Private College? Cross Cohort Evidence on the Effects of
+College Quality on Earnings.” Working Paper.
+
+CEW Georgetown. “The Economic Value of College Majors,” May 7, 2015.
+<https://cew.georgetown.edu/cew-reports/valueofcollegemajors/>.
+
+“Do Elite Colleges Lead to Higher Salaries? Only for Some Professions -
+WSJ” (n.d.). Available
+athttps://www.wsj.com/articles/do-elite-colleges-lead-to-higher-salaries-only-for-some-professions-1454295674.
+
+“Fact Sheet: Obama Administration Announces Release of New Scorecard
+Data | U.S. Department of Education” (n.d.). Available
+athttps://www.ed.gov/news/press-releases/fact-sheet-obama-administration-announces-release-new-scorecard-data.
+
+Kelly, A. P. (2001), “Does College Really Improve Social Mobility?,”
+Brookings.
+
+McCann, C. (2019), “Technical Documentation: College Scorecard
+Institution-Level Data,” 46.
+
+National Bureau of Economic Research, June 1996.
+<https://doi.org/10.3386/w5613.James>, Estelle, Nabeel Alsalam, Joseph
+C. Conaty, and Duc-Le To. “College Quality and Future Earnings: Where
+Should You Send Your Child to College?”
+
+“Prosperity, Not Upward Mobility, Is What Matters - The Atlantic”
+(n.d.). Available
+athttps://www.theatlantic.com/business/archive/2017/01/prosperity-upward-mobility/511925/.
+
+US Census Bureau Center for Economic Studies (n.d.). “Post-Secondary
+Employment Outcomes (PSEO),” Available
+athttps://lehd.ces.census.gov/data/pseo\_experimental.html.
+
+“Which Traits Predict Graduates’ Earnings?” The Economist, June 15,
+2018.
+<https://www.economist.com/graphic-detail/2018/06/15/which-traits-predict-graduates-earnings>.
